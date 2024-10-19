@@ -1,8 +1,8 @@
-#include "typedefs.h"
+#include "typedefs.hpp"
 
 #include "CliParams.hpp"
-#include "HermiteRunner.h"
-#include "Naive.h"
+#include "HermiteRunner.hpp"
+#include "Naive.hpp"
 #include <iostream>
 
 // TODO

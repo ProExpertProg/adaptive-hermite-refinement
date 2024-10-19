@@ -1,7 +1,7 @@
 #pragma once
 
-#include "constants.h"
-#include "Naive.h"
+#include "constants.hpp"
+#include "Naive.hpp"
 #include <experimental/mdarray>
 #include <utility>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "typedefs.h"
+#include "typedefs.hpp"
 #include <experimental/mdspan>
 #include <experimental/mdarray>
 #include <iostream>

@@ -1,5 +1,5 @@
-#include "Naive.h"
-#include "equillibrium.h"
+#include "Naive.hpp"
+#include "equillibrium.hpp"
 
 #include <cnpy.h>
 #include <cstdlib>

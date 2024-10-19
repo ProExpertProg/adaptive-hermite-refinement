@@ -1,6 +1,6 @@
 #pragma once
 
-#include "constants.h"
+#include "constants.hpp"
 
 namespace ahr {
     [[nodiscard]] inline Real Gamma0(Real x) {

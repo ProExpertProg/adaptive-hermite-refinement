@@ -1,6 +1,6 @@
 #include "fftw-cpp/fftw-cpp.h"
 
-#include "timing.h"
+#include "timing.hpp"
 
 #include <argparse/argparse.hpp>
 #include <iostream>

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "HermiteRunner.h"
-#include "constants.h"
-#include "nonlinears.h"
+#include "HermiteRunner.hpp"
+#include "constants.hpp"
+#include "nonlinears.hpp"
 
 #include <fftw-cpp/fftw-cpp.h>
 #include <iomanip>

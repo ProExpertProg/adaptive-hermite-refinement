@@ -1,6 +1,6 @@
-#include "typedefs.h"
+#include "typedefs.hpp"
 
-#include "cilk.h"
+#include "cilk.hpp"
 #include <algorithm>
 #include <argparse/argparse.hpp>
 #include <cassert>

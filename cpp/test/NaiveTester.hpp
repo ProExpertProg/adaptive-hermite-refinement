@@ -1,5 +1,5 @@
 #pragma once
-#include "Naive.h"
+#include "Naive.hpp"
 #include "util.hpp"
 
 #include <gtest/gtest.h>
