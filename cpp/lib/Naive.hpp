@@ -109,8 +109,8 @@ private:
   /// @}
 
   void for_each_xy(std::invocable<Dim, Dim> auto fun) const {
-    for (Dim x = 0; x < X; ++x) {
-      for (Dim y = 0; y < Y; ++y) {
+    for (Dim y = 0; y < Y; ++y) {
+      for (Dim x = 0; x < X; ++x) {
         fun(x, y);
       }
     }
@@ -118,8 +118,8 @@ private:
 
   /// Iterate in phase space, will later be changed to account for phase space dims
   void for_each_kxky(std::invocable<Dim, Dim> auto fun) const {
-    for (Dim kx = 0; kx < KX; ++kx) {
-      for (Dim ky = 0; ky < KY; ++ky) {
+    for (Dim ky = 0; ky < KY; ++ky) {
+      for (Dim kx = 0; kx < KX; ++kx) {
         fun(kx, ky);
       }
     }
@@ -127,8 +127,8 @@ private:
 
   void for_each_mxy(std::invocable<Dim, Dim, Dim> auto fun) {
     for (Dim m = 0; m < M; ++m) {
-      for (Dim x = 0; x < X; ++x) {
-        for (Dim y = 0; y < Y; ++y) {
+      for (Dim y = 0; y < Y; ++y) {
+        for (Dim x = 0; x < X; ++x) {
           fun(m, x, y);
         }
       }
