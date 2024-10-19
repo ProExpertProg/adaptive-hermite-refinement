@@ -557,8 +557,8 @@ Naive::Energies Naive::calculateEnergies() const {
   });
 
   // Normalize the energies
-  e.magnetic /= Real(X) * Real(Y);
-  e.kinetic /= Real(X) * Real(Y);
+  e.magnetic *= XYNorm;
+  e.kinetic *= XYNorm;
 
   return e;
 }
