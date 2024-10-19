@@ -54,13 +54,13 @@ add_executable(adaptive_hermite_refinement lib/test-triangle.cpp)
 target_include_directories(adaptive_hermite_refinement PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(adaptive_hermite_refinement argparse mdspan)
 
-add_library(src-lib OBJECT Naive.cpp Naive.h HermiteRunner.cpp HermiteRunner.h)
-target_include_directories(src-lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(src-lib OBJECT lib/Naive.cpp lib/Naive.hpp lib/HermiteRunner.cpp lib/HermiteRunner.hpp)
+target_include_directories(src-lib PUBLIC lib/)
 target_link_libraries(src-lib mdspan fftw-cpp cnpy)
 
 add_subdirectory(bench)
 
-add_executable(naive driver.cpp)
+add_executable(naive lib/driver.cpp)
 target_link_libraries(naive argparse src-lib)
 
 option(AHR_TEST "Enable AHR tests" ON)

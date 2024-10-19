@@ -1,4 +1,4 @@
-#include "Naive.h"
+#include "Naive.hpp"
 #include "NaiveTester.hpp"
 #include "util.hpp"
 
