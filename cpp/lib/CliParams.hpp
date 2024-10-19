@@ -30,10 +30,7 @@ inline CliParams::CliParams(std::string_view name) : arguments(std::string{name}
       .scan<'i', Dim>()
       .default_value(Dim{100});
 
-  arguments.add_argument("N")
-      .help("Number of timesteps")
-      .scan<'i', Dim>()
-      .default_value(Dim{20});
+  arguments.add_argument("N").help("Number of timesteps").scan<'i', Dim>().default_value(Dim{20});
 
   arguments.add_argument("save-interval")
       .help("How often the code should write out the results")
