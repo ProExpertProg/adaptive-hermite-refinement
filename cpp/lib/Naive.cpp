@@ -480,7 +480,7 @@ mdarray<Real, dextents<Dim, 2u>> Naive::getFinalAPar() {
 
   // Write to a layout_right array and normalize
   mdarray<Real, dextents<Dim, 2u>> result{X, Y};
-  for_each_xy([&](Dim x, Dim y) { result(x, y) = buf(x, y) / double(X) / double(Y); });
+  for_each_xy([&](Dim x, Dim y) { result(x, y) = buf(x, y) * XYNorm; });
 
   return result;
 }
@@ -540,7 +540,7 @@ void Naive::exportToNpy(std::string path, ahr::Naive::CViewXY view) const {
 }
 
 void Naive::normalize(Naive::ViewXY view, Naive::ViewXY viewOut) const {
-  for_each_xy([&](Dim x, Dim y) { viewOut(x, y) = view(x, y) / double(X) / double(Y); });
+  for_each_xy([&](Dim x, Dim y) { viewOut(x, y) = view(x, y) * XYNorm; });
 }
 
 Naive::Energies Naive::calculateEnergies() const {

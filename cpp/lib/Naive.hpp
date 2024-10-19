@@ -53,6 +53,8 @@ public:
 
 private:
   Dim const M, X, Y, KX{X / 2 + 1}, KY{Y};
+  Real XYNorm{1.0 / double(X) / double(Y)}; ///< Normalization factor for FFT
+
   Real dt{-1};        ///< timestep
   Real elapsedT{0.0}; ///< total time elapsed
 
@@ -154,8 +156,8 @@ private:
   /// (after inverse FFT, values will be properly normalized)
   void prepareDXY_PH(CViewXY view_K, CViewXY viewDX_K, CViewXY viewDY_K) {
     for_each_kxky([&](Dim kx, Dim ky) {
-      viewDX_K(kx, ky) = kx_(kx) * 1i * view_K(kx, ky) / double(X) / double(Y);
-      viewDY_K(kx, ky) = ky_(ky) * 1i * view_K(kx, ky) / double(X) / double(Y);
+      viewDX_K(kx, ky) = kx_(kx) * 1i * view_K(kx, ky) * XYNorm;
+      viewDY_K(kx, ky) = ky_(ky) * 1i * view_K(kx, ky) * XYNorm;
     });
   }
 
