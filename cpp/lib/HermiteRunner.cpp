@@ -3,5 +3,3 @@
 //
 
 #include "HermiteRunner.hpp"
-
-ahr::HermiteRunner::HermiteRunner(std::ostream &out) : out(out) {}

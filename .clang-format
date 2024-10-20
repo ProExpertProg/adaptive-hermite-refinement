@@ -11,10 +11,8 @@ ColumnLimit: 100
 
 IncludeCategories:
   - Regex: '^<'
-    Priority: 4
-  - Regex: '^<(gmock|gtest)/'
     Priority: 3
-  - Regex: '^"fftw-cpp/'
-    Priority: 1
-  - Regex: '.*'
+  - Regex: '^<(gmock|gtest|spdlog|fftw-cpp)/'
     Priority: 2
+  - Regex: '.*'
+    Priority: 1

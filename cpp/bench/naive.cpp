@@ -11,7 +11,7 @@ static void BM_Naive(benchmark::State &state) {
   Dim const X = state.range(1);
   Dim const N = state.range(2);
 
-  Naive naive{oss, M, X, X};
+  Naive naive{M, X, X};
   naive.init("gauss");
 
   // Lower CFL -> lower dt -> fewer repeats

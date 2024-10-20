@@ -14,8 +14,6 @@ class HermiteRunner {
 public:
   virtual ~HermiteRunner() = default;
 
-  explicit HermiteRunner(std::ostream &out);
-
   /**
    * init prepares the hermite simulation.
    */
@@ -33,9 +31,6 @@ public:
    * @return Final values of APar.
    */
   virtual mdarray<Real, dextents<Dim, 2u>> getFinalAPar() = 0;
-
-protected:
-  std::ostream &out;
 };
 
 } // namespace ahr

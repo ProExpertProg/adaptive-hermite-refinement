@@ -4,11 +4,15 @@
 #include "HermiteRunner.hpp"
 #include "Naive.hpp"
 #include <iostream>
+#include <spdlog/cfg/env.h>
 
 // TODO
 using namespace ahr;
 
 int main(int argc, const char *argv[]) {
+  // Load log levels from SPDLOG_LEVEL env variable
+  spdlog::cfg::load_env_levels();
+
   CliParams cliParams{"naive"};
 
   try {
@@ -19,7 +23,7 @@ int main(int argc, const char *argv[]) {
   }
 
   auto const p = cliParams.get();
-  Naive naive{std::cout, p.M, p.X, p.X};
+  Naive naive{p.M, p.X, p.X};
   HermiteRunner &runner = naive;
 
   runner.init("OT01");
