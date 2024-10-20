@@ -35,7 +35,7 @@ jobs:
           cmake ../cpp -G Ninja -D CMAKE_BUILD_TYPE=Release -D ENABLE_CILK=OFF
           ninja
       - name: benchmark
-        run: ./cmake-build-release/bench/bench-naive --benchmark_out_format=json --benchmark_out=../bench-naive.json
+        run: ./cmake-build-release/bench/bench-naive --benchmark_out_format=json --benchmark_out=../bench-naive.json --benchmark_min_time=5x
 
       # Compare to baseline (main)
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
@@ -48,7 +48,7 @@ jobs:
           cmake ../cpp -G Ninja -D CMAKE_BUILD_TYPE=Release -D ENABLE_CILK=OFF
           ninja
       - name: benchmark-main
-        run: ./cmake-build-release-main/bench/bench-naive --benchmark_out_format=json --benchmark_out=../bench-naive-main.json
+        run: ./cmake-build-release-main/bench/bench-naive --benchmark_out_format=json --benchmark_out=../bench-naive-main.json --benchmark_min_time=5x
       - name: compare-install
         run: |
           # Use cmake-build-release-main because cmake-build-release is gone after checkout
