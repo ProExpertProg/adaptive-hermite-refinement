@@ -29,7 +29,7 @@ TEST_P(NaiveEnergy, Gauss) {
   nu = p.nu;
   res = p.res;
 
-  Naive naive{out, p.M, p.X, p.X};
+  Naive naive{p.M, p.X, p.X};
   naive.init("gauss");
   auto const e_init = naive.calculateEnergies();
 
@@ -75,7 +75,7 @@ TEST_P(NaiveEnergy, OT01) {
   nu = p.nu;
   res = p.res;
 
-  Naive naive{out, p.M, p.X, p.X};
+  Naive naive{p.M, p.X, p.X};
   naive.init("OT01");
   auto const e_init = naive.calculateEnergies();
 

@@ -3,6 +3,7 @@
 
 #include <cnpy.h>
 #include <cstdlib>
+#include <spdlog/fmt/bundled/ostream.h>
 #include <utility>
 
 namespace {
@@ -19,7 +20,7 @@ std::array<T, Size> forward_to_array(Args &&...args) {
 } // namespace
 
 namespace ahr {
-Naive::Naive(std::ostream &out, Dim M, Dim X, Dim Y) : HermiteRunner(out), M(M), X(X), Y(Y) {
+Naive::Naive(Dim M, Dim X, Dim Y) : HermiteRunner(), M(M), X(X), Y(Y) {
   assert(M >= 4 or M == 2);
   // X and Y must be powers of 2
   assert((X & (X - 1)) == 0);
@@ -83,7 +84,7 @@ void Naive::run(Dim N, Dim saveInterval) {
   for (Dim t = 0; t < N;) {
     if (saveInterval != 0 and t % saveInterval == 0) {
       if (!saved) {
-        out << "Saving for timestep: " << t << std::endl;
+        spdlog::info("Saving for timestep: {}", t);
         saved = true;
         exportTimestep(t);
       }
@@ -97,7 +98,7 @@ void Naive::run(Dim N, Dim saveInterval) {
     }
 
     if (repeat or divergent) {
-      out << std::boolalpha << "repeat: " << repeat << ", divergent:" << divergent << std::endl;
+      spdlog::debug("repeat: {}, divergent: {}", repeat, divergent);
       repeat = false;
       divergent = false;
     } else if (dt == -1) {
@@ -105,8 +106,7 @@ void Naive::run(Dim N, Dim saveInterval) {
       hyper = HyperCoefficients::calculate(dt, KX, KY, M);
     }
 
-    // DEBUG
-    out << "dt: " << dt << std::endl;
+    spdlog::debug("dt: {}", dt);
 
     // store results of nonlinear operators, as well as results of predictor step
     Buf3D_K GM_K_Star{KX, KY, M}, GM_Nonlinear_K{KX, KY, M};
@@ -291,8 +291,7 @@ void Naive::run(Dim N, Dim saveInterval) {
                                          std::sqrt(sumAParRelError / (Real(KX) * Real(KY))));
       });
 
-      out << "sumApar relative_error:" << sumAParRelError << std::endl;
-      out << "relative_error:" << relative_error << std::endl;
+      spdlog::debug("sumAParRelError: {}, relative_error: {}", sumAParRelError, relative_error);
       // TODO(OPT) bail if relative error is large
 
       DerivateNewMoment(A_PAR);
@@ -391,11 +390,12 @@ void Naive::run(Dim N, Dim saveInterval) {
         DerivateNewMoment(LAST);
       }
       if (relative_error <= epsilon) {
-        out << "relative error small:" << relative_error << std::endl;
+        spdlog::debug("Converged at p={} with relative_error={}", p, relative_error);
         break;
       }
       if (p != 0 and relative_error / old_error > 1.0) {
-        out << "diverging!" << std::endl;
+        spdlog::debug("Diverging at p={} with relative_error={} & old_error={}", p, relative_error,
+                      old_error);
         divergent = true;
         divergentCount++;
         dt = low * dt;
@@ -403,7 +403,7 @@ void Naive::run(Dim N, Dim saveInterval) {
       }
       if (relative_error > epsilon and p == MaxP) {
         // did not converge well enough
-        out << "repeating!" << std::endl;
+        spdlog::debug("Repeating!");
         repeat = true;
         repeatCount++;
         dt = low * dt;
@@ -428,8 +428,9 @@ void Naive::run(Dim N, Dim saveInterval) {
     dt = updateTimestep(dt, tempDt, noInc, relative_error);
     hyper = HyperCoefficients::calculate(dt, KX, KY, M);
 
-    out << "Moving on to next timestep: " << t << std::endl;
-    out << "dti is: " << dt << std::endl;
+    spdlog::info("Moving on to next timestep: {}\n"
+                 "dt is: {}",
+                 t, dt);
     noInc = false;
     saved = false;
 
@@ -440,12 +441,17 @@ void Naive::run(Dim N, Dim saveInterval) {
 
     // Must be after swap for now, it looks at current, not new values
     auto [magnetic, kinetic] = calculateEnergies();
-    out << "magnetic energy: " << magnetic << ", kinetic energy: " << kinetic << std::endl;
+    spdlog::info("t={} magnetic energy: {}, kinetic energy: {}", t, magnetic, kinetic);
+
+    // Log moment values when level is trace (most verbose)
+
+    for (Dim m = 0; m < M; ++m) {
+      spdlog::trace("t={} m={}:\n{}", t, m,
+                    fmt::streamed(ostream_tuple(std::setprecision(16), sliceXY(moments_K, m))));
+    }
   }
 
-  out << "dt actual: " << dt << std::endl;
-  out << "repeat count: " << repeatCount << std::endl
-      << "divergent count: " << divergentCount << std::endl;
+  spdlog::info("Finished! Repeat count: {}, Divergent count: {}", repeatCount, divergentCount);
 
   // TODO need a way to only export the final timestep
   if (saveInterval != 0) { exportTimestep(N); }

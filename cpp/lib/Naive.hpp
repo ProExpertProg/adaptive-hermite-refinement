@@ -2,19 +2,14 @@
 
 #include "HermiteRunner.hpp"
 #include "constants.hpp"
+#include "debug.hpp"
 #include "nonlinears.hpp"
 
 #include <fftw-cpp/fftw-cpp.h>
+#include <spdlog/spdlog.h>
+
 #include <iomanip>
 #include <type_traits>
-
-#define _ln1(x) #x
-#define _ln2(x) _ln1(x)
-#define debug(name, var) print(__FILE__ ":" _ln2(__LINE__) " " name, var)
-#define debug2(var) debug(#var, (var))
-#define debugXY(var)                                                                               \
-  debug2((var).DX);                                                                                \
-  debug2((var).DY)
 
 namespace ahr {
 namespace stdex = std::experimental;
@@ -23,13 +18,12 @@ class Naive : public ahr::HermiteRunner {
 public:
   /**
    * Construct a new simulation using the Naive approach.
-   * @param out The stream to which we're logging.
    * @param M The number of moments. Note that moments are 0-indexed, meaning that the highest
    * moment is M-1.
    * @param X The size of the X domain.
    * @param Y The size of the Y domain.
    */
-  Naive(std::ostream &out, Dim M, Dim X, Dim Y);
+  Naive(Dim M, Dim X, Dim Y);
 
   void init(std::string_view equilibriumName) override;
 
@@ -262,36 +256,11 @@ private:
       CFLFlow = std::min({dx / vxMax, dy / vyMax, 2.0 / omegaKaw, dx / bxMax, dy / byMax});
     }
 
-    // DEBUG
-    out << "vxmax: " << vxMax << " vymax: " << vyMax << std::endl;
-    out << "vxmax: " << vxMax << " vymax: " << vyMax << std::endl;
-    out << "bxmax: " << bxMax << " bymax: " << byMax << std::endl;
-    out << "bperp_max: " << bPerpMax << " omegakaw: " << omegaKaw << std::endl;
-    out << "CFLFlow: " << CFLFlow << std::endl;
-    out << "calculated dt: " << CFLFlow * CFLFrac << std::endl;
+    spdlog::debug("vxmax: {}, vymax: {}, bxmax: {}, bymax: {}", vxMax, vyMax, bxMax, byMax);
+    spdlog::debug("bperp_max: {}, omegakaw: {}, CFLFlow: {}", bPerpMax, omegaKaw, CFLFlow);
+    spdlog::debug("Calculated timestep: {}", CFLFrac * CFLFlow);
 
     return CFLFrac * CFLFlow;
-  }
-
-  // TODO this is a terrible hack
-  template <typename View>
-    requires(not std::same_as<View, Buf2D>) and (not std::same_as<View, Buf2D_K>)
-
-  void print(std::string_view name, View view) const {
-    out << name << ":\n";
-    for (int x = 0; x < view.extent(0); ++x) {
-      for (int y = 0; y < view.extent(1); ++y) {
-        out << std::setprecision(16) << view(x, y) << " ";
-      }
-      out << std::endl;
-    }
-    out << "===========================================" << std::endl;
-  }
-
-  template <typename Buf>
-    requires std::same_as<Buf, Buf2D> or std::same_as<Buf, Buf2D_K>
-  [[maybe_unused]] void print(std::string_view name, Buf &view) const {
-    print(name, view.to_mdspan());
   }
 
 public:

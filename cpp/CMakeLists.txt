@@ -12,22 +12,26 @@ FetchContent_Declare(
         argparse
         GIT_REPOSITORY https://github.com/p-ranav/argparse.git
 )
-FetchContent_MakeAvailable(argparse)
 
 FetchContent_Declare(
         mdspan
         GIT_REPOSITORY https://github.com/kokkos/mdspan.git
         GIT_TAG 9ceface91483775a6c74d06ebf717bbb2768452f
 )
-FetchContent_MakeAvailable(mdspan)
 
 FetchContent_Declare(
         cnpy
         GIT_REPOSITORY https://github.com/rogersce/cnpy.git
         GIT_TAG 4e8810b1a8637695171ed346ce68f6984e585ef4
 )
-FetchContent_MakeAvailable(cnpy)
 
+FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG e593f6695c6065e6b345fe2862f04a519ed484e0
+)
+
+FetchContent_MakeAvailable(argparse mdspan cnpy spdlog)
 target_include_directories(cnpy PUBLIC ${CNPY_SOURCE_DIR})
 
 # ==========================
@@ -56,7 +60,7 @@ target_link_libraries(adaptive_hermite_refinement argparse mdspan)
 
 add_library(src-lib OBJECT lib/Naive.cpp lib/Naive.hpp lib/HermiteRunner.cpp lib/HermiteRunner.hpp)
 target_include_directories(src-lib PUBLIC lib/)
-target_link_libraries(src-lib mdspan fftw-cpp cnpy)
+target_link_libraries(src-lib mdspan fftw-cpp cnpy spdlog::spdlog)
 
 add_subdirectory(bench)
 
