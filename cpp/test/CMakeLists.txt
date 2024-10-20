@@ -8,8 +8,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 function(add_viriato_test_impl NAME)
-    add_executable(${NAME} ${ARGN})
-    target_link_libraries(${NAME} src-lib GTest::gmock_main)
+    add_executable(${NAME} main.cpp ${ARGN})
+    target_link_libraries(${NAME} src-lib GTest::gmock)
     add_test(NAME ${NAME} COMMAND ${NAME} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endfunction()
 
