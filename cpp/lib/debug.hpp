@@ -3,13 +3,6 @@
 #include <ostream>
 #include <spdlog/fmt/bundled/format.h>
 
-// #define _ln1(x) #x
-// #define _ln2(x) _ln1(x)
-// #define debug(name, var) print(__FILE__ ":" _ln2(__LINE__) " " name, var)
-// #define debug2(var) debug(#var, (var))
-// #d efine debugXY(var) \
-//  debug2((var).DX); \ debug2((var).DY)
-
 /// Specialize fmt::formatter for no-parameter functions.
 /// This allows us to pass a lambda to a log statement which will only be evaluated if the log
 /// statement is active.
@@ -54,5 +47,4 @@ template <typename T, typename Extents, typename Layout, typename Container>
 std::ostream &operator<<(std::ostream &o, mdarray<T, Extents, Layout, Container> const &m) {
   return o << m.to_mdspan();
 }
-
 } // namespace std::experimental
