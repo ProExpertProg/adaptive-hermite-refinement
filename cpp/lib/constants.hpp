@@ -1,5 +1,6 @@
 #pragma once
 
+#include "grid.hpp"
 #include "typedefs.hpp"
 
 namespace ahr {
@@ -47,8 +48,8 @@ inline Real a0 = 1.0;
 struct HyperCoefficients {
   Real nu_g, nu_2, eta2, nu_ei;
 
-  static HyperCoefficients calculate(Real dt, Dim KX, Dim KY, Dim M) {
-    Real kPerpMax2 = std::pow(KX, 2) + std::pow(Real(KY) / 2, 2);
+  static HyperCoefficients calculate(Real dt, Grid const &g) {
+    Real kPerpMax2 = std::pow(g.KX, 2) + std::pow(Real(g.KY) / 2, 2);
 
     HyperCoefficients ret{};
     ret.nu_g = hyper_coef_g / dt / std::pow(kPerpMax2, hyper_order_g);
@@ -59,7 +60,7 @@ struct HyperCoefficients {
       ret.eta2 = hyper_coef / dt / std::pow(kPerpMax2, hyper_order);
     }
 
-    ret.nu_ei = hyperm_coef / dt / std::pow(M, 2 * hyper_morder);
+    ret.nu_ei = hyperm_coef / dt / std::pow(g.M, 2 * hyper_morder);
 
     return ret;
   }

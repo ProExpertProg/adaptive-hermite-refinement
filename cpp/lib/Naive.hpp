@@ -3,6 +3,7 @@
 #include "HermiteRunner.hpp"
 #include "constants.hpp"
 #include "debug.hpp"
+#include "grid.hpp"
 #include "nonlinears.hpp"
 
 #include <fftw-cpp/fftw-cpp.h>
@@ -31,29 +32,20 @@ public:
 
   mdarray<Real, dextents<Dim, 2u>> getFinalAPar() override;
 
-private:
-  template <size_t D, bool IsReal>
-  using buf_left = fftw::basic_mdbuffer<Real, stdex::dextents<std::size_t, D>, Complex,
-                                        stdex::layout_left, IsReal>;
-
-public:
-  using Buf3D_K = buf_left<3u, false>;
-  using Buf2D_K = buf_left<2u, false>;
-  using Buf3D = buf_left<3u, true>;
-  using Buf2D = buf_left<2u, true>;
-
-  using CViewXY = stdex::mdspan<Complex, stdex::dextents<Dim, 2u>, stdex::layout_left>;
-  using ViewXY = stdex::mdspan<Real, stdex::dextents<Dim, 2u>, stdex::layout_left>;
 
 private:
-  Dim const M, X, Y, KX{X / 2 + 1}, KY{Y};
-  Real XYNorm{1.0 / double(X) / double(Y)}; ///< Normalization factor for FFT
+  Grid g;
+
+  using View = Grid::View;
+  using Buf = Grid::Buf;
+
+  Real XYNorm{1.0 / double(g.X) / double(g.Y)}; ///< Normalization factor for FFT
 
   Real dt{-1};        ///< timestep
   Real elapsedT{0.0}; ///< total time elapsed
 
-  void hlFilter(CViewXY &complexArray);
-  void fft(ViewXY in, CViewXY out); ///< FFT with Hou-Li Filter
+  void hlFilter(View::C_XY &complexArray);
+  void fft(View::R_XY in, View::C_XY out); ///< FFT with Hou-Li Filter
 
   fftw::plan_r2c<2u> fft_base{};
   fftw::plan_c2r<2u> fftInv{};
@@ -62,25 +54,8 @@ private:
   static constexpr Dim N_E = 0;
   static constexpr Dim A_PAR = 1;
   static constexpr Dim G_MIN = 2;
-  const Dim LAST = M - 1; ///< This is equivalent to ngtot in Viriato
-
-  template <class Buffer> struct DxDy {
-    using buffer_t = Buffer;
-    Buffer DX, DY;
-
-    template <typename... Args>
-      requires std::constructible_from<Buffer, Args...>
-    explicit DxDy(Args &&...args)
-        : DX{std::forward<Args>(args)...}, DY{std::forward<Args>(args)...} {}
-
-    DxDy(Buffer dx, Buffer dy) : DX(dx), DY(dy) {}
-
-    template <class U>
-      requires std::convertible_to<Buffer, U>
-    operator DxDy<U>() { // NOLINT(google-explicit-constructor)
-      return {U(DX), U(DY)};
-    }
-  };
+  const Dim LAST = g.M - 1; ///< This is equivalent to ngtot in Viriato
+  template <class T> using DxDy = Grid::DxDy<T>;
 
   /// \defgroup Buffers for all the physical quantities used.
   /// Names ending in K mean the values are in phase space.
@@ -92,90 +67,52 @@ private:
   /// - m=1: A∥ (or Apar, parallel velocity)
   /// TODO maybe instead of these enormous amounts of memory, we could reuse (parallelism might
   /// suffer)
-  Buf3D_K moments_K{KX, KY, M}, momentsNew_K{KX, KY, M};
+  Buf::C_MXY moments_K, momentsNew_K;
 
   /// A|| equilibrium value, used in corrector step
-  Buf2D_K aParEq_K{KX, KY};
+  Buf::C_XY aParEq_K;
 
   /// Φ: the electrostatic potential.
-  Buf2D_K phi_K{KX, KY}, phi_K_New{KX, KY};
+  Buf::C_XY phi_K, phi_K_New;
 
   /// sq(∇⊥) A∥, also parallel electron velocity
-  Buf2D_K ueKPar_K{KX, KY}, ueKPar_K_New{KX, KY};
+  Buf::C_XY ueKPar_K, ueKPar_K_New;
   /// @}
 
-  void for_each_xy(std::invocable<Dim, Dim> auto fun) const {
-    for (Dim y = 0; y < Y; ++y) {
-      for (Dim x = 0; x < X; ++x) {
-        fun(x, y);
-      }
-    }
-  }
+  View::C_XY momentK(Dim m) { return g.sliceXY(moments_K, m); }
 
-  /// Iterate in phase space, will later be changed to account for phase space dims
-  void for_each_kxky(std::invocable<Dim, Dim> auto fun) const {
-    for (Dim ky = 0; ky < KY; ++ky) {
-      for (Dim kx = 0; kx < KX; ++kx) {
-        fun(kx, ky);
-      }
-    }
-  }
 
-  void for_each_mxy(std::invocable<Dim, Dim, Dim> auto fun) {
-    for (Dim m = 0; m < M; ++m) {
-      for (Dim y = 0; y < Y; ++y) {
-        for (Dim x = 0; x < X; ++x) {
-          fun(m, x, y);
-        }
-      }
-    }
-  }
-
-  /// Returns a 2D mdspan of values in the XY space for a specified m.
-  template <class Buf>
-    requires std::same_as<std::decay_t<Buf>, Buf3D> or std::same_as<std::decay_t<Buf>, Buf3D_K>
-  static auto sliceXY(Buf &moments, Dim m) {
-    return stdex::submdspan(moments.to_mdspan(), stdex::full_extent, stdex::full_extent, m);
-  }
-
-  /// Returns a DxDy of 2D mdspans for a specified m.
-  template <class Buf>
-    requires std::same_as<Buf, Buf3D> // or std::same_as<Buf, Buf3D_K> // TODO likely no need for
-                                      // DxDy in K space?
-  static auto sliceXY(DxDy<Buf> &moments, Dim m) {
-    return DxDy{sliceXY(moments.DX, m), sliceXY(moments.DY, m)};
-  }
 
   /// Prepares the δx and δy of viewPH in phase space, as well as over-normalizes
   /// (after inverse FFT, values will be properly normalized)
-  void prepareDXY_PH(CViewXY view_K, CViewXY viewDX_K, CViewXY viewDY_K) {
-    for_each_kxky([&](Dim kx, Dim ky) {
+  void prepareDXY_PH(View::C_XY view_K, View::C_XY viewDX_K, View::C_XY viewDY_K) {
+    g.for_each_kxky([&](Dim kx, Dim ky) {
       viewDX_K(kx, ky) = kx_(kx) * 1i * view_K(kx, ky) * XYNorm;
       viewDY_K(kx, ky) = ky_(ky) * 1i * view_K(kx, ky) * XYNorm;
     });
   }
 
   /// computes bracket [view, other], expects normalized values
-  void bracket(const ViewXY &dxOp1, const ViewXY &dyOp1, const ViewXY &dxOp2, const ViewXY &dyOp2,
-               const ViewXY &output) {
-    for_each_xy([&](Dim x, Dim y) {
+  void bracket(const View::R_XY &dxOp1, const View::R_XY &dyOp1, const View::R_XY &dxOp2,
+               const View::R_XY &dyOp2, const View::R_XY &output) {
+    g.for_each_xy([&](Dim x, Dim y) {
       output(x, y) = dxOp1(x, y) * dyOp2(x, y) - dyOp1(x, y) * dxOp2(x, y);
     });
   }
 
   /// bracket overload for DxDy params
-  void bracket(const DxDy<ViewXY> &op1, const DxDy<ViewXY> &op2, const ViewXY &output) {
+  void bracket(const DxDy<View::R_XY> &op1, const DxDy<View::R_XY> &op2, const View::R_XY &output) {
     bracket(op1.DX, op1.DY, op2.DX, op2.DY, output);
   }
 
   /// Bracket that only takes inputs and allocates temporaries and output
-  [[nodiscard]] Buf2D_K fullBracket(CViewXY op1, CViewXY op2);
+  [[nodiscard]] Buf::C_XY fullBracket(View::C_XY op1, View::C_XY op2);
 
   /// Compute derivatives in real space and store them in output
-  void derivatives(const CViewXY &value, DxDy<ViewXY> output);
+  void derivatives(const View::C_XY &value, DxDy<View::R_XY> output);
 
   /// Bracket that takes in derivatives that were already computed
-  [[nodiscard]] Buf2D_K halfBracket(DxDy<ViewXY> op1, DxDy<ViewXY> op2);
+  [[nodiscard]] Buf::C_XY halfBracket(DxDy<View::R_XY> op1, DxDy<View::R_XY> op2);
 
   // =================
   // Math helpers
@@ -183,7 +120,7 @@ private:
   // =================
 
   [[nodiscard]] Real ky_(Dim ky) const {
-    return (ky <= (KY / 2) ? Real(ky) : Real(ky) - Real(KY)) * Real(lx) / Real(ly);
+    return (ky <= (g.KY / 2) ? Real(ky) : Real(ky) - Real(g.KY)) * Real(lx) / Real(ly);
   };
   [[nodiscard]] Real kx_(Dim kx) const { return Real(kx); };
 
@@ -209,9 +146,10 @@ private:
 
   /// getTimestep calculates flows and magnetic fields to determine a dt.
   /// It also updates bPerpMax in the process.
-  [[nodiscard]] Real getTimestep(DxDy<ViewXY> dPhi, DxDy<ViewXY> dNE, DxDy<ViewXY> dAPar) {
+  [[nodiscard]] Real getTimestep(DxDy<View::R_XY> dPhi, DxDy<View::R_XY> dNE,
+                                 DxDy<View::R_XY> dAPar) {
     // compute flows
-    DxDy<ViewXY> ve, b;
+    DxDy<View::R_XY> ve, b;
     Real vyMax{0}, vxMax{0}, bxMax{0}, byMax{0};
     bPerpMax = 0;
 
@@ -222,7 +160,7 @@ private:
     b.DX = dAPar.DY;
     b.DY = dAPar.DX;
 
-    for_each_xy([&](Dim x, Dim y) {
+    g.for_each_xy([&](Dim x, Dim y) {
       bxMax = std::max(bxMax, std::abs(b.DX(x, y)));
       byMax = std::max(byMax, std::abs(b.DY(x, y)));
       bPerpMax = std::max(bPerpMax, std::sqrt(b.DX(x, y) * b.DX(x, y) + b.DY(x, y) * b.DY(x, y)));
@@ -234,22 +172,22 @@ private:
       }
     });
 
-    Real kperpDum2 = std::pow(ky_(KY / 2), 2) + std::pow(Real(KX), 2);
+    Real kperpDum2 = std::pow(ky_(g.KY / 2), 2) + std::pow(Real(g.KX), 2);
     Real omegaKaw;
     if (rhoI < smallRhoI) {
       omegaKaw = std::sqrt(1.0 + kperpDum2 * (3.0 / 4.0 * rhoI * rhoI + rhoS * rhoS)) *
-                 ky_(KY / 2) * bPerpMax / (1.0 + kperpDum2 * de * de);
+                 ky_(g.KY / 2) * bPerpMax / (1.0 + kperpDum2 * de * de);
     } else {
       omegaKaw =
           std::sqrt(kperpDum2 *
                     (rhoS * rhoS - rhoI * rhoI / (Gamma0(0.5 * kperpDum2 * rhoI * rhoI) - 1.0))) *
-          ky_(KY / 2 + 1) * bPerpMax / std::sqrt(1.0 + kperpDum2 * de * de);
+          ky_(g.KY / 2 + 1) * bPerpMax / std::sqrt(1.0 + kperpDum2 * de * de);
     }
 
-    Real dx = lx / Real(X), dy = ly / Real(Y);
+    Real dx = lx / Real(g.X), dy = ly / Real(g.Y);
 
     Real CFLFlow;
-    if (M > 2) {
+    if (g.M > 2) {
       CFLFlow = std::min({dx / vxMax, dy / vyMax, 2.0 / omegaKaw,
                           std::min(dx / bxMax, dy / byMax) / (rhoS / de) / std::sqrt(LAST)});
     } else {
@@ -274,24 +212,21 @@ public:
 
   Real elapsedTime() const { return elapsedT; }
 
-  // Returns a const CViewXY
-  auto getMoment_K(Dim m) const { return sliceXY(moments_K, m); }
-
-  Buf2D getMoment(Dim m) const;
+  Buf::R_XY getMoment(Dim m) const;
 
 private:
   Real updateTimestep(Real dt, Real tempDt, bool noInc, Real relative_error) const;
 
 public:
   // TODO(luka) separate exporting utility
-  void exportToNpy(std::string path, ViewXY view) const;
+  void exportToNpy(std::string path, View::R_XY view) const;
 
   // Will also normalize and inverseFFT
-  void exportToNpy(std::string path, CViewXY view) const;
+  void exportToNpy(std::string path, View::C_XY view) const;
 
 private:
   // If view = viewOut, then we're normalizing in place.
-  void normalize(Naive::ViewXY view, Naive::ViewXY viewOut) const;
+  void normalize(Naive::View::R_XY view, Naive::View::R_XY viewOut) const;
 
   void exportTimestep(Dim t);
 };
