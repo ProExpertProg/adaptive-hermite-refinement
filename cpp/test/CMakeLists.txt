@@ -18,5 +18,7 @@ function(add_viriato_test FILE)
     add_viriato_test_impl(${NAME} ${FILE} ${ARGN})
 endfunction()
 
+add_viriato_test(grid.cpp)
+
 add_viriato_test(naive-energies.cpp)
 add_viriato_test(naive-moments.cpp)
