@@ -82,6 +82,10 @@ public:
     }
   };
 
+  // TODO test?
+  [[nodiscard]] DxDy<Buf::R_XY> dBufXY() const { return {rBufXY(), rBufXY()}; }
+  [[nodiscard]] DxDy<Buf::R_MXY> dBufMXY() const { return {rBufMXY(), rBufMXY()}; }
+
   static View::C_XY sliceXY(Buf::C_MXY &moments, Dim m) {
     return stdex::submdspan(moments.to_mdspan(), stdex::full_extent, stdex::full_extent, m);
   }

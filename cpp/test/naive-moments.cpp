@@ -44,9 +44,9 @@ protected:
     explicit NpyMdspan(cnpy::NpyArray array) : array_(std::move(array)) {}
 
     // TODO(luka) const view
-    Naive::ViewXY view() {
+    Grid::View::R_XY view() {
       std::span<size_t, 2> const extents{array_.shape.data(), 2};
-      return Naive::ViewXY{array_.data<Real>(), extents};
+      return Grid::View::R_XY{array_.data<Real>(), extents};
     }
 
     [[nodiscard]] bool valid() const { return array_.word_size == sizeof(Real); }
