@@ -67,7 +67,7 @@ void Naive::init(std::string_view equilibriumName) {
 
 void Naive::run(Dim N, Dim saveInterval) {
   // isothermal if only running with 2 moments
-  assert(M >= 4 or M == 2);
+  assert(g.M >= 4 or g.M == 2);
 
   bool divergent = false, repeat = false, noInc = false;
   int divergentCount = 0, repeatCount = 0;
