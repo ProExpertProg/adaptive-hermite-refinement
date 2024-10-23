@@ -53,6 +53,8 @@ public:
 
 private:
   Dim const M, X, Y, KX{X / 2 + 1}, KY{Y};
+  Real XYNorm{1.0 / double(X) / double(Y)}; ///< Normalization factor for FFT
+
   Real dt{-1};        ///< timestep
   Real elapsedT{0.0}; ///< total time elapsed
 
@@ -109,8 +111,8 @@ private:
   /// @}
 
   void for_each_xy(std::invocable<Dim, Dim> auto fun) const {
-    for (Dim x = 0; x < X; ++x) {
-      for (Dim y = 0; y < Y; ++y) {
+    for (Dim y = 0; y < Y; ++y) {
+      for (Dim x = 0; x < X; ++x) {
         fun(x, y);
       }
     }
@@ -118,8 +120,8 @@ private:
 
   /// Iterate in phase space, will later be changed to account for phase space dims
   void for_each_kxky(std::invocable<Dim, Dim> auto fun) const {
-    for (Dim kx = 0; kx < KX; ++kx) {
-      for (Dim ky = 0; ky < KY; ++ky) {
+    for (Dim ky = 0; ky < KY; ++ky) {
+      for (Dim kx = 0; kx < KX; ++kx) {
         fun(kx, ky);
       }
     }
@@ -127,8 +129,8 @@ private:
 
   void for_each_mxy(std::invocable<Dim, Dim, Dim> auto fun) {
     for (Dim m = 0; m < M; ++m) {
-      for (Dim x = 0; x < X; ++x) {
-        for (Dim y = 0; y < Y; ++y) {
+      for (Dim y = 0; y < Y; ++y) {
+        for (Dim x = 0; x < X; ++x) {
           fun(m, x, y);
         }
       }
@@ -154,8 +156,8 @@ private:
   /// (after inverse FFT, values will be properly normalized)
   void prepareDXY_PH(CViewXY view_K, CViewXY viewDX_K, CViewXY viewDY_K) {
     for_each_kxky([&](Dim kx, Dim ky) {
-      viewDX_K(kx, ky) = kx_(kx) * 1i * view_K(kx, ky) / double(X) / double(Y);
-      viewDY_K(kx, ky) = ky_(ky) * 1i * view_K(kx, ky) / double(X) / double(Y);
+      viewDX_K(kx, ky) = kx_(kx) * 1i * view_K(kx, ky) * XYNorm;
+      viewDY_K(kx, ky) = ky_(ky) * 1i * view_K(kx, ky) * XYNorm;
     });
   }
 
