@@ -25,8 +25,8 @@ void Naive::hlFilter(View::C_XY &complexArray) {
   });
 }
 
-void Naive::fft(View::R_XY in, View::C_XY out) {
-  fft_base(in, out);
+void Naive::fftHL(View::R_XY in, View::C_XY out) {
+  tf.fft(in, out);
   hlFilter(out);
 }
 
@@ -36,14 +36,13 @@ void Naive::init(std::string_view equilibriumName) {
   auto temp = g.rBufXY();
 
   // Plan FFTs both ways
-  fft_base = fftw::plan_r2c<2u>::dft(temp.to_mdspan(), phi_K.to_mdspan(), fftw::ESTIMATE);
-  fftInv = fftw::plan_c2r<2u>::dft(phi_K.to_mdspan(), temp.to_mdspan(), fftw::ESTIMATE);
+  tf.init();
 
   // Initialize equilibrium values
   auto [aParEq, phi] = equilibrium(equilibriumName, g);
 
-  fft(phi.to_mdspan(), phi_K.to_mdspan());
-  fft(aParEq.to_mdspan(), aParEq_K.to_mdspan());
+  fftHL(phi.to_mdspan(), phi_K.to_mdspan());
+  fftHL(aParEq.to_mdspan(), aParEq_K.to_mdspan());
 
   // Transform moments into phase space
   for (int m = G_MIN; m < g.M; ++m) {
@@ -473,7 +472,7 @@ Real Naive::updateTimestep(Real dt, Real tempDt, bool noInc, Real relative_error
 mdarray<Real, dextents<Dim, 2u>> Naive::getFinalAPar() {
   Buf::R_XY buf = g.rBufXY();
   // This actually wrecks A_PAR, but we don't need it anymore
-  fftInv(Grid::sliceXY(moments_K, A_PAR), buf.to_mdspan());
+  tf.bfft(Grid::sliceXY(moments_K, A_PAR), buf.to_mdspan());
 
   // Write to a layout_right array and normalize
   mdarray<Real, dextents<Dim, 2u>> result{g.X, g.Y};
@@ -488,7 +487,7 @@ Naive::Buf::R_XY Naive::getMoment(Dim m) const {
   g.for_each_kxky([&](Dim kx, Dim ky) { tmp(kx, ky) = moments_K(kx, ky, m); });
 
   Buf::R_XY out = g.rBufXY();
-  fftInv(tmp.to_mdspan(), out.to_mdspan());
+  tf.bfft(tmp.to_mdspan(), out.to_mdspan());
 
   return out;
 }
@@ -504,8 +503,8 @@ Naive::Buf::R_XY Naive::getMoment(Dim m) const {
 void Naive::derivatives(const View::C_XY &op, Naive::DxDy<View::R_XY> output) {
   DxDy<Buf::C_XY> Der_K{g.KX, g.KY};
   prepareDXY_PH(op, Der_K.DX, Der_K.DY);
-  fftInv(Der_K.DX.to_mdspan(), output.DX);
-  fftInv(Der_K.DY.to_mdspan(), output.DY);
+  tf.bfft(Der_K.DX.to_mdspan(), output.DX);
+  tf.bfft(Der_K.DY.to_mdspan(), output.DY);
 }
 
 Naive::Buf::C_XY Naive::halfBracket(Naive::DxDy<View::R_XY> derOp1,
@@ -513,7 +512,7 @@ Naive::Buf::C_XY Naive::halfBracket(Naive::DxDy<View::R_XY> derOp1,
   Buf::R_XY br = g.rBufXY();
   Buf::C_XY br_K = g.cBufXY();
   bracket(derOp1, derOp2, br);
-  fft(br.to_mdspan(), br_K.to_mdspan());
+  fftHL(br.to_mdspan(), br_K.to_mdspan());
   br_K(0, 0) = 0;
   return br_K;
 }
@@ -530,14 +529,10 @@ void Naive::exportToNpy(std::string path, View::C_XY view) const {
 
   g.for_each_kxky([&](Dim kx, Dim ky) { tempK(kx, ky) = view(kx, ky); });
 
-  fftInv(tempK.to_mdspan(), temp.to_mdspan());
-  normalize(temp.to_mdspan(), temp.to_mdspan());
+  tf.bfft(tempK.to_mdspan(), temp.to_mdspan());
+  tf.normalize(temp.to_mdspan(), temp.to_mdspan());
 
   exportToNpy(std::move(path), temp.to_mdspan());
-}
-
-void Naive::normalize(View::R_XY view, View::R_XY viewOut) const {
-  g.for_each_xy([&](Dim x, Dim y) { viewOut(x, y) = view(x, y) * XYNorm; });
 }
 
 Naive::Energies Naive::calculateEnergies() const {
