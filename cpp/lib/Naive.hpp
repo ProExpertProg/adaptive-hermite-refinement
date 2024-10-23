@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HermiteRunner.hpp"
+#include "Transformer.hpp"
 #include "constants.hpp"
 #include "debug.hpp"
 #include "grid.hpp"
@@ -35,6 +36,7 @@ public:
 
 private:
   Grid g;
+  Transformer tf{g};
 
   using View = Grid::View;
   using Buf = Grid::Buf;
@@ -45,10 +47,8 @@ private:
   Real elapsedT{0.0}; ///< total time elapsed
 
   void hlFilter(View::C_XY &complexArray);
-  void fft(View::R_XY in, View::C_XY out); ///< FFT with Hou-Li Filter
+  void fftHL(View::R_XY in, View::C_XY out); ///< FFT with Hou-Li Filter
 
-  fftw::plan_r2c<2u> fft_base{};
-  fftw::plan_c2r<2u> fftInv{};
   Real bPerpMax{0};
 
   static constexpr Dim N_E = 0;
@@ -232,9 +232,6 @@ public:
   void exportToNpy(std::string path, View::C_XY view) const;
 
 private:
-  // If view = viewOut, then we're normalizing in place.
-  void normalize(Naive::View::R_XY view, Naive::View::R_XY viewOut) const;
-
   void exportTimestep(Dim t);
 };
 }; // namespace ahr

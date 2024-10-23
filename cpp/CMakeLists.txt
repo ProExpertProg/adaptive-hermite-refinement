@@ -58,7 +58,9 @@ add_executable(adaptive_hermite_refinement lib/test-triangle.cpp)
 target_include_directories(adaptive_hermite_refinement PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(adaptive_hermite_refinement argparse mdspan)
 
-add_library(src-lib OBJECT lib/Naive.cpp lib/Naive.hpp lib/HermiteRunner.cpp lib/HermiteRunner.hpp)
+add_library(src-lib OBJECT lib/Naive.cpp lib/Naive.hpp lib/HermiteRunner.cpp lib/HermiteRunner.hpp
+        lib/Transformer.cpp
+        lib/Transformer.hpp)
 target_include_directories(src-lib PUBLIC lib/)
 target_link_libraries(src-lib mdspan fftw-cpp cnpy spdlog::spdlog)
 

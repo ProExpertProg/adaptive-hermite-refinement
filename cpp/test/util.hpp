@@ -3,6 +3,7 @@
 #include <fftw-cpp/fftw-cpp.h>
 #include <gmock/gmock.h>
 #include <tuple>
+#include <iomanip>
 
 // Function to slice the tuple
 template <std::size_t Start, std::size_t End, typename Tuple, std::size_t... Indices>
