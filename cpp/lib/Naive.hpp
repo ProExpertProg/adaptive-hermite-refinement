@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Exporter.hpp"
 #include "HermiteRunner.hpp"
 #include "Transformer.hpp"
 #include "constants.hpp"
@@ -34,9 +35,10 @@ public:
   mdarray<Real, dextents<Dim, 2u>> getFinalAPar() override;
 
 
-private:
   Grid g;
   Transformer tf{g};
+  Exporter exporter{g, tf};
+private:
 
   using View = Grid::View;
   using Buf = Grid::Buf;
@@ -224,14 +226,6 @@ public:
 private:
   Real updateTimestep(Real dt, Real tempDt, bool noInc, Real relative_error) const;
 
-public:
-  // TODO(luka) separate exporting utility
-  void exportToNpy(std::string path, View::R_XY view) const;
-
-  // Will also normalize and inverseFFT
-  void exportToNpy(std::string path, View::C_XY view) const;
-
-private:
   void exportTimestep(Dim t);
 };
 }; // namespace ahr

@@ -20,6 +20,7 @@ endfunction()
 
 add_viriato_test(grid.cpp)
 add_viriato_test(transformer.cpp)
+add_viriato_test(exporter.cpp)
 
 add_viriato_test(naive-energies.cpp)
 add_viriato_test(naive-moments.cpp)
