@@ -450,15 +450,15 @@ void Naive::run(Dim N, Dim saveInterval) {
 void Naive::exportTimestep(Dim t) {
   std::ostringstream oss;
   oss << "a_par_t" << t << ".npy";
-  exportToNpy(oss.str(), Grid::sliceXY(moments_K, A_PAR));
+  exporter.exportTo(oss.str(), Grid::sliceXY(moments_K, A_PAR));
 
   oss.str("");
   oss << "phi_t" << t << ".npy";
-  exportToNpy(oss.str(), phi_K);
+  exporter.exportTo(oss.str(), phi_K);
 
   oss.str("");
   oss << "uekpar_t" << t << ".npy";
-  exportToNpy(oss.str(), ueKPar_K);
+  exporter.exportTo(oss.str(), ueKPar_K);
 }
 
 Real Naive::updateTimestep(Real dt, Real tempDt, bool noInc, Real relative_error) const {
@@ -515,24 +515,6 @@ Naive::Buf::C_XY Naive::halfBracket(Naive::DxDy<View::R_XY> derOp1,
   fftHL(br.to_mdspan(), br_K.to_mdspan());
   br_K(0, 0) = 0;
   return br_K;
-}
-
-void Naive::exportToNpy(std::string path, View::R_XY view) const {
-  // Coordinates are flipped because we use layout_left
-  cnpy::npy_save(std::move(path), view.data_handle(), {g.Y, g.X}, "w");
-}
-
-void Naive::exportToNpy(std::string path, View::C_XY view) const {
-  // fft overwrites the input, so we need to copy it to a temporary buffer
-  auto tempK = g.cBufXY();
-  auto temp = g.rBufXY();
-
-  g.for_each_kxky([&](Dim kx, Dim ky) { tempK(kx, ky) = view(kx, ky); });
-
-  tf.bfft(tempK.to_mdspan(), temp.to_mdspan());
-  tf.normalize(temp.to_mdspan(), temp.to_mdspan());
-
-  exportToNpy(std::move(path), temp.to_mdspan());
 }
 
 Naive::Energies Naive::calculateEnergies() const {

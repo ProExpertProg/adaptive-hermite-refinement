@@ -27,34 +27,12 @@ constexpr Real ATOL = LOW_PRECISION_ATOL;
 template <param_like Param> class NaiveMomentsBase : public NaiveTester<Param> {
 protected:
   using Base = NaiveTester<Param>;
-  std::string getFilename(Dim m) {
+  fs::path getFilename(Dim m) {
     auto const p = Base::GetParam();
 
     // Tests are run from inside the `test` directory
     auto const filename = p.to_param_str() + "_m" + std::to_string(m) + ".npy";
     return fs::current_path() / "_test_data" / filename;
-  }
-
-  // Owning holder of a npy array with convenience to see it as an mdspan.
-  // We can use this to avoid needlessly copying into an mdarray.
-  class NpyMdspan {
-    cnpy::NpyArray array_;
-
-  public:
-    explicit NpyMdspan(cnpy::NpyArray array) : array_(std::move(array)) {}
-
-    // TODO(luka) const view
-    Grid::View::R_XY view() {
-      std::span<size_t, 2> const extents{array_.shape.data(), 2};
-      return Grid::View::R_XY{array_.data<Real>(), extents};
-    }
-
-    [[nodiscard]] bool valid() const { return array_.word_size == sizeof(Real); }
-  };
-
-  NpyMdspan readMoment(Dim m) {
-    auto const filename = getFilename(m);
-    return NpyMdspan{cnpy::npy_load(filename)};
   }
 };
 
@@ -79,9 +57,9 @@ TEST_P(NaiveMoments, CheckMoments) {
   for (Dim m = 0; m < p.M; m++) {
     // To update values, uncomment these 2 lines
     // std::cout << "WARNING!: Overwriting " << getFilename(m) << std::endl;
-    // naive.exportToNpy(getFilename(m), naive.getMoment(m));
+    // naive.exporter.exportTo(getFilename(m), naive.getMoment(m));
 
-    auto npy = readMoment(m);
+    auto npy = naive.exporter.importReal(getFilename(m));
     ASSERT_TRUE(npy.valid());
     auto const max_val = std::ranges::max(std::span(npy.view().data_handle(), npy.view().size()));
     auto const n = static_cast<Real>(p.N);
