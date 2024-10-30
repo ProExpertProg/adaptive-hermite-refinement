@@ -32,9 +32,6 @@ public:
 
   void run(Dim N, Dim saveInterval) override;
 
-  mdarray<Real, dextents<Dim, 2u>> getFinalAPar() override;
-
-
   Grid g;
   Transformer tf{g};
   Exporter exporter{g, tf};

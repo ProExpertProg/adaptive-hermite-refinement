@@ -469,18 +469,6 @@ Real Naive::updateTimestep(Real dt, Real tempDt, bool noInc, Real relative_error
   return dt;
 }
 
-mdarray<Real, dextents<Dim, 2u>> Naive::getFinalAPar() {
-  Buf::R_XY buf = g.rBufXY();
-  // This actually wrecks A_PAR, but we don't need it anymore
-  tf.bfft(Grid::sliceXY(moments_K, A_PAR), buf.to_mdspan());
-
-  // Write to a layout_right array and normalize
-  mdarray<Real, dextents<Dim, 2u>> result{g.X, g.Y};
-  g.for_each_xy([&](Dim x, Dim y) { result(x, y) = buf(x, y) * XYNorm; });
-
-  return result;
-}
-
 Naive::Buf::R_XY Naive::getMoment(Dim m) const {
   // Make a copy first
   Buf::C_XY tmp = g.cBufXY();
