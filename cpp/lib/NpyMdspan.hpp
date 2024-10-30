@@ -19,14 +19,9 @@ public:
   using ViewXY = stdex::mdspan<Real, stdex::dextents<size_t, 2u>>;
 
   // TODO(luka) const view
-  Grid::View::R_XY view() {
-    // Reverse the dimensions
-    auto shape = array_.shape;
-    std::reverse(shape.begin(), shape.end());
-    std::span<size_t, 2> const extents{shape.data(), 2};
-
-    // Return a layout_left view
-    return Grid::View::R_XY{array_.data<Real>(), extents};
+  ViewXY view() {
+    std::span<size_t, 2> const extents{array_.shape.data(), 2};
+    return ViewXY{array_.data<Real>(), extents};
   }
 
   [[nodiscard]] bool valid() const { return array_.word_size == sizeof(Real); }

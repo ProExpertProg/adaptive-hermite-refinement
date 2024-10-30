@@ -21,14 +21,12 @@ void Exporter::exportTo(fs::path const &filename, Grid::View::C_XY cView) {
 }
 
 void Exporter::exportTo(fs::path const &filename, Grid::View::R_XY rView) {
-  // TODO Copy the data to a layout-right buffer
-  //  stdex::mdarray<Real, stdex::dextents<size_t, 2u>> rArray{rView.extents()};
-  //  grid.for_each_xy([&](Dim x, Dim y) { rArray(x, y) = rView(x, y); });
-  //  cnpy::npy_save(prefix_dir / filename, rArray.data(), {grid.X, grid.Y}, "w");
+  // Copy the data to a layout-right buffer
+  stdex::mdarray<Real, stdex::dextents<size_t, 2u>> rArray{rView.extents()};
+  grid.for_each_xy([&](Dim x, Dim y) { rArray(x, y) = rView(x, y); });
 
-  // Dimensions are switched because we use layout_left
   auto const path = filename.is_absolute() ? filename : prefix_dir / filename;
-  cnpy::npy_save(path, rView.data_handle(), {grid.Y, grid.X}, "w");
+  cnpy::npy_save(path, rArray.data(), {grid.X, grid.Y}, "w");
 }
 
 NpyMdspan

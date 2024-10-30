@@ -15,7 +15,7 @@ public:
   /// Forward FFT
   void fft(Grid::View::R_XY in, Grid::View::C_XY out) const;
 
-  /// Backwards FFT (unnormalized)
+  /// Backwards FFT (unnormalized, destructive)
   void bfft(Grid::View::C_XY in, Grid::View::R_XY out) const;
 
   /// Normalize a complex buffer (can be in-place)

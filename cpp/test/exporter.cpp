@@ -37,10 +37,11 @@ TEST_F(TestExporter, RoundTripReal) {
 }
 
 TEST_F(TestExporter, RoundTripComplex) {
-  auto cBuf = grid.cBufXY();
+  auto cBuf = grid.cBufXY(), cBuf2 = grid.cBufXY();
   grid.for_each_kxky([&](Dim kx, Dim ky) {
-    cBuf(kx, ky) = Complex(Real(kx + ky * grid.KX), Real(kx - ky * grid.KX));
+    cBuf(kx, ky) = {Real(kx) + Real(ky * grid.KX), Real(kx) - Real(ky * grid.KX)};
   });
+  tf.normalize(cBuf, cBuf2);
 
   // Use absolute path this time
   exporter.exportTo(tmp_dir / "test.npy", cBuf);
@@ -51,13 +52,10 @@ TEST_F(TestExporter, RoundTripComplex) {
   // Import buffer and compare
   auto rBuf = exporter.importReal("test.npy");
   auto rBuf2 = grid.rBufXY();
-  tf.bfft(cBuf, rBuf2);
+  tf.bfft(cBuf2, rBuf2);
 
   // No math, tolerance is 0
-  EXPECT_THAT(rBuf.view(), MdspanElementsAllClose(rBuf2.to_mdspan(), 0.0))
-      << "rBuf:\n"
-      << rBuf.view() << "\nrBuf2:\n"
-      << rBuf2.to_mdspan();
+  EXPECT_THAT(rBuf.view(), MdspanElementsAllClose(rBuf2.to_mdspan(), 0.0));
 }
 
 } // namespace ahr
