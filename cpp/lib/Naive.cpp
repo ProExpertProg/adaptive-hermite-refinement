@@ -18,13 +18,6 @@ Naive::Naive(Dim M, Dim X, Dim Y)
   assert((Y & (Y - 1)) == 0);
 }
 
-void Naive::hlFilter(View::C_XY &complexArray) {
-  g.for_each_kxky([&](Dim kx, Dim ky) {
-    complexArray(kx, ky) *=
-        exp(-36.0 * pow(kx_(kx) / g.KX, 36.0)) * exp(-36.0 * pow(ky_(ky) / g.KY, 36.0));
-  });
-}
-
 void Naive::fftHL(View::R_XY in, View::C_XY out) {
   tf.fft(in, out);
   hlFilter(out);

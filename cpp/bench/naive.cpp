@@ -5,8 +5,6 @@
 
 using namespace ahr;
 static void BM_Naive(benchmark::State &state) {
-  std::ostringstream oss;
-
   Dim const M = state.range(0);
   Dim const X = state.range(1);
   Dim const N = state.range(2);

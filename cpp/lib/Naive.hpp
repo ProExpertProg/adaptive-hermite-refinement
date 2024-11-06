@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Exporter.hpp"
+#include "Filter.hpp"
 #include "HermiteRunner.hpp"
 #include "Transformer.hpp"
 #include "constants.hpp"
@@ -35,6 +36,8 @@ public:
   Grid g;
   Transformer tf{g};
   Exporter exporter{g, tf};
+  HouLiFilter hlFilter{g};
+
 private:
 
   using View = Grid::View;
@@ -45,7 +48,6 @@ private:
   Real dt{-1};        ///< timestep
   Real elapsedT{0.0}; ///< total time elapsed
 
-  void hlFilter(View::C_XY &complexArray);
   void fftHL(View::R_XY in, View::C_XY out); ///< FFT with Hou-Li Filter
 
   Real bPerpMax{0};
@@ -120,8 +122,8 @@ private:
 
   [[nodiscard]] Real ky_(Dim ky) const {
     return (ky <= (g.KY / 2) ? Real(ky) : Real(ky) - Real(g.KY)) * Real(lx) / Real(ly);
-  };
-  [[nodiscard]] Real kx_(Dim kx) const { return Real(kx); };
+  }
+  [[nodiscard]] Real kx_(Dim kx) const { return Real(kx); }
 
   [[nodiscard]] Real kPerp2(Dim kx, Dim ky) const {
     auto dkx = kx_(kx), dky = ky_(ky);
