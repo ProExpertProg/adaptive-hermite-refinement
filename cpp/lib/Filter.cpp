@@ -3,6 +3,9 @@
 //
 
 #include "Filter.hpp"
+
+#include <eve/module/core.hpp>
+
 namespace ahr {
 void HouLiFilter::operator()(Grid::View::C_XY view) {
   grid.for_each_kxky([&](Dim kx, Dim ky) {
@@ -38,5 +41,34 @@ void HouLiFilterCached1D::operator()(Grid::View::C_XY view) {
     // Extra multiplication at runtime for lower memory cost
     view(kx, ky) *= factors_x[kx] * factors_y[ky];
   });
+}
+
+HouLiFilterCached1DVector::HouLiFilterCached1DVector(Grid const &grid)
+    : HouLiFilterCached1D(grid), factors_x_duped(2 * grid.KX) {
+  assert(grid.KY % C_WIDTH == 0);
+  for (Dim kx = 0; kx < grid.KX; ++kx) {
+    factors_x_duped[kx * 2] = factors_x[kx];
+    factors_x_duped[kx * 2 + 1] = factors_x[kx];
+  }
+}
+
+void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) {
+  for (int ky = 0; ky < grid.KY; ++ky) {
+    int kx = 0;
+    for (; kx <= grid.KX - C_WIDTH; kx += C_WIDTH) {
+      Real *view_addr = (Real *)&view(kx, ky);
+      VReal input{view_addr};
+
+      VReal vfx{&factors_x_duped[kx * 2]};
+      VReal vfy{factors_y[ky]};
+
+      eve::store(input * vfx * vfy, view_addr);
+    }
+
+    // tail
+    for (; kx < grid.KX; ++kx) {
+      view(kx, ky) *= factors_x[kx] * factors_y[ky];
+    }
+  }
 }
 } // namespace ahr

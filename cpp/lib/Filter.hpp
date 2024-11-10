@@ -1,6 +1,7 @@
 #pragma once
 #include "constants.hpp"
 #include "grid.hpp"
+#include <eve/wide.hpp>
 
 namespace ahr {
 
@@ -39,4 +40,19 @@ public:
 protected:
   std::vector<Real> factors_x, factors_y;
 };
+
+class HouLiFilterCached1DVector : HouLiFilterCached1D {
+public:
+  explicit HouLiFilterCached1DVector(Grid const &grid);
+  void operator()(Grid::View::C_XY view);
+
+private:
+  using VReal = eve::wide<Real>;
+  static auto constexpr R_WIDTH = VReal::size();
+  static auto constexpr C_WIDTH = VReal::size() / 2;
+
+  /// A pre-expanded vector of 2d factors
+  std::vector<Real> factors_x_duped;
+};
+
 } // namespace ahr

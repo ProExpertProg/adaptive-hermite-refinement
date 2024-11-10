@@ -31,7 +31,14 @@ FetchContent_Declare(
         GIT_TAG e593f6695c6065e6b345fe2862f04a519ed484e0
 )
 
-FetchContent_MakeAvailable(argparse mdspan cnpy spdlog)
+FetchContent_Declare(
+        eve
+        GIT_REPOSITORY https://github.com/jfalcou/eve.git
+        GIT_TAG b2d8b637e71d132654c52480549e9b79944d1f74
+)
+
+option(EVE_BUILD_TEST "Build EVE tests" OFF)
+FetchContent_MakeAvailable(argparse mdspan cnpy spdlog eve)
 target_include_directories(cnpy PUBLIC ${CNPY_SOURCE_DIR})
 
 # ==========================
@@ -44,6 +51,7 @@ target_link_libraries(fftw-cpp INTERFACE mdspan)
 option(ENABLE_AVX512 "Enable AVX512 instructions (e.g. might want to turn off for the sake of Valgrind)" OFF)
 if (ENABLE_AVX512)
     add_compile_options("-mavx512f" "-march=native")
+    add_compile_definitions(AVX512_ENABLED)
 endif ()
 
 option(ENABLE_CILK "Enable Cilk parallelism" ON)
@@ -64,7 +72,8 @@ add_library(src-lib OBJECT lib/Naive.cpp lib/Naive.hpp lib/HermiteRunner.cpp lib
         lib/Filter.hpp lib/Filter.cpp
 )
 target_include_directories(src-lib PUBLIC lib/)
-target_link_libraries(src-lib mdspan fftw-cpp cnpy spdlog::spdlog)
+# TODO give eve only to vectorized targets
+target_link_libraries(src-lib mdspan fftw-cpp cnpy spdlog::spdlog eve::eve)
 
 add_subdirectory(bench)
 

@@ -14,7 +14,7 @@ protected:
   TestedFilter filter_t{grid};
 };
 
-using Types = ::testing::Types<HouLiFilterCached, HouLiFilterCached1D>;
+using Types = ::testing::Types<HouLiFilterCached, HouLiFilterCached1D, HouLiFilterCached1DVector>;
 TYPED_TEST_SUITE(TestFilter, Types);
 
 TYPED_TEST(TestFilter, Filter) {
