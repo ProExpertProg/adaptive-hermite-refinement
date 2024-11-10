@@ -35,3 +35,7 @@ BENCHMARK(BM_HouLiFilter<HouLiFilterCached>)
 BENCHMARK(BM_HouLiFilter<HouLiFilterCached1D>)
     ->ArgsProduct({{2048, 4096, 8192}, {2048, 4096, 8192}})
     ->Unit(benchmark::kMillisecond);
+
+BENCHMARK(BM_HouLiFilter<HouLiFilterCached1DVector>)
+    ->ArgsProduct({{2048, 4096, 8192}, {2048, 4096, 8192}})
+    ->Unit(benchmark::kMillisecond);
