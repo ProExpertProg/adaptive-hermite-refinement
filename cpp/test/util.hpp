@@ -2,8 +2,8 @@
 
 #include <fftw-cpp/fftw-cpp.h>
 #include <gmock/gmock.h>
-#include <tuple>
 #include <iomanip>
+#include <tuple>
 
 // Function to slice the tuple
 template <std::size_t Start, std::size_t End, typename Tuple, std::size_t... Indices>
@@ -21,11 +21,19 @@ template <std::size_t Start, typename... Args> auto slice(const std::tuple<Args.
   return slice<Start, sizeof...(Args)>(t);
 }
 
+template <typename T> T absdiff_no_overflow(T a, T b) { return std::max(a, b) - std::min(a, b); }
+
+template <typename T> T absdiff_no_overflow(std::complex<T> a, std::complex<T> b) {
+  auto const real_diff = absdiff_no_overflow(a.real(), b.real());
+  auto const imag_diff = absdiff_no_overflow(a.imag(), b.imag());
+  return std::abs(std::complex<T>{real_diff, imag_diff});
+}
+
 using ::testing::PrintToString;
 MATCHER_P3(AllClose, val, rel_tol, abs_tol,
            PrintToString(val) + " ±" + PrintToString(abs_tol) + " (±" +
                PrintToString(double(rel_tol) * std::abs(val)) + ")") {
-  auto diff = std::max(arg, val) - std::min(arg, val);
+  auto diff = absdiff_no_overflow(val, arg);
   double tolerance_diff = double(diff) - double(abs_tol) - double(rel_tol) * std::abs(val);
   return tolerance_diff <= 0;
 }
