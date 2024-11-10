@@ -54,13 +54,15 @@ HouLiFilterCached1DVector::HouLiFilterCached1DVector(Grid const &grid)
 
 void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) const {
   for (int ky = 0; ky < grid.KY; ++ky) {
+    VReal vfy{factors_y[ky]};
+
+    // avoid vector dereference inside loop
+    Real *fx_addr = factors_x_duped.data();
     int kx = 0;
-    for (; kx <= grid.KX - C_WIDTH; kx += C_WIDTH) {
+    for (; kx <= grid.KX - C_WIDTH; kx += C_WIDTH, fx_addr += R_WIDTH) {
       Real *view_addr = (Real *)&view(kx, ky);
       VReal input{view_addr};
-
-      VReal vfx{&factors_x_duped[kx * 2]};
-      VReal vfy{factors_y[ky]};
+      VReal vfx{fx_addr};
 
       eve::store(input * vfx * vfy, view_addr);
     }
