@@ -51,5 +51,8 @@ private:
   using VReal = eve::wide<Real>;
   static auto constexpr R_WIDTH = VReal::size();
   static auto constexpr C_WIDTH = VReal::size() / 2;
+
+  VReal duplicateLower(VReal src); ///< duplicate lower half of src
+  VReal duplicateUpper(VReal src); ///< duplicate upper half of src
 };
 } // namespace ahr

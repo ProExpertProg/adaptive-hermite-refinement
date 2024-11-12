@@ -67,11 +67,6 @@ void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) {
 
   static_assert(view.stride(0) == 1); // contiguous in kx
 
-  // permutation indices
-  static_assert(C_WIDTH == 4); // idx are hardcoded
-  VIdx const lower_idx = {0, 0, 1, 1, 2, 2, 3, 3};
-  VIdx const upper_idx = {4, 4, 5, 5, 6, 6, 7, 7};
-
   for (int ky = 0; ky < grid.KY; ++ky) {
     // avoid std::vector dereference inside loop:
     // broadcast fy value into vector
@@ -93,11 +88,11 @@ void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) {
       VReal vfx_full{fx_addr};
 
       // Permute lower factors, multiply lower input
-      VReal lower_fx = _mm512_permutex2var_pd(vfx_full, lower_idx, vfx_full);
+      VReal lower_fx = duplicateLower(vfx_full);
       eve::store(input_lower * lower_fx * vfy, view_addr);
 
       // Permute upper factors, multiply upper input
-      VReal upper_fx = _mm512_permutex2var_pd(vfx_full, upper_idx, vfx_full);
+      VReal upper_fx = duplicateUpper(vfx_full);
       eve::store(input_upper * upper_fx * vfy, upper_view_addr);
     }
 
@@ -107,4 +102,26 @@ void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) {
     }
   }
 }
+
+#ifdef AVX512_ENABLED
+HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateLower(VReal src) {
+  static_assert(R_WIDTH == 8);
+  const VIdx lower_idx{0, 0, 1, 1, 2, 2, 3, 3};
+  return _mm512_permutex2var_pd(src, lower_idx, src);
+}
+HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateUpper(VReal src) {
+  static_assert(R_WIDTH == 8);
+  const VIdx upper_idx{4, 4, 5, 5, 6, 6, 7, 7};
+  return _mm512_permutex2var_pd(src, upper_idx, src);
+}
+#else
+HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateLower(VReal src) {
+  static_assert(R_WIDTH == 2);
+  return _mm_unpacklo_pd(src, src);
+}
+HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateUpper(VReal src) {
+  static_assert(R_WIDTH == 2);
+  return _mm_unpackhi_pd(src, src);
+}
+#endif
 } // namespace ahr
