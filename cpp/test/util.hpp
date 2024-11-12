@@ -70,7 +70,7 @@ template <class... Args> static constexpr bool is_mdspan_v<stdex::mdspan<Args...
 
 MATCHER_P3(MdspanElementsAllClose, vals, rel_tol, abs_tol,
            "Elements within " + PrintToString(abs_tol) + " (abs) and " + PrintToString(rel_tol) +
-               " (rel)") {
+               " (rel) of \n" + PrintToString(vals)) {
   static_assert(is_mdspan_v<std::decay_t<decltype(vals)>> &&
                     is_mdspan_v<std::decay_t<decltype(arg)>>,
                 "ElementsAllClose only works with mdspan");
@@ -114,3 +114,16 @@ MATCHER_P3(MdspanElementsAllClose, vals, rel_tol, abs_tol,
 template <class V, class R> auto MdspanElementsAllClose(V &&vals, R &&rel_tol) {
   return MdspanElementsAllClose(std::forward<V>(vals), std::forward<R>(rel_tol), 0.0);
 }
+
+namespace std::experimental {
+/// This function provides an overload to GoogleTest for printing an mdspan.
+/// It will always print at the highest precision (16 for double).
+/// It must be in the same namespace as mdspan.
+/// This overload is only instantiated if an ostream operator<< for mdspan exists.
+template <typename T, typename Extents, typename Layout, typename Accessor>
+  requires requires(mdspan<T, Extents, Layout, Accessor> const &m, std::ostream &o) { o << m; }
+void PrintTo(mdspan<T, Extents, Layout, Accessor> const &m, ::std::ostream *os) {
+  *os << std::setprecision(16) << m;
+}
+
+} // namespace std::experimental
