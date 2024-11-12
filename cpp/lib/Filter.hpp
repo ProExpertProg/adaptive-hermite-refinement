@@ -47,12 +47,9 @@ public:
   void operator()(Grid::View::C_XY view);
 
 private:
+  using VIdx = eve::wide<long long>;
   using VReal = eve::wide<Real>;
   static auto constexpr R_WIDTH = VReal::size();
   static auto constexpr C_WIDTH = VReal::size() / 2;
-
-  /// A pre-expanded vector of 2d factors
-  std::vector<Real> factors_x_duped;
 };
-
 } // namespace ahr

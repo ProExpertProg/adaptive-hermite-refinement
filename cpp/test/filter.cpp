@@ -1,6 +1,7 @@
 #include "Filter.hpp"
 #include "grid.hpp"
 
+#include "debug.hpp"
 #include "util.hpp"
 
 #include <gtest/gtest.h>
@@ -9,7 +10,7 @@ namespace ahr {
 
 template <typename TestedFilter> class TestFilter : public ::testing::Test {
 protected:
-  Grid grid{5, 9, 16};
+  Grid grid{5, 32, 32};
   HouLiFilter filter{grid};
   TestedFilter filter_t{grid};
 };
