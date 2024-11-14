@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Brackets.hpp"
 #include "Exporter.hpp"
 #include "Filter.hpp"
 #include "HermiteRunner.hpp"
@@ -37,13 +38,14 @@ public:
   Transformer tf{g};
   Exporter exporter{g, tf};
   HouLiFilter hlFilter{g};
+  Brackets br{g, tf, hlFilter};
 
 private:
 
   using View = Grid::View;
   using Buf = Grid::Buf;
 
-  Real XYNorm{1.0 / double(g.X) / double(g.Y)}; ///< Normalization factor for FFT
+  const Real XYNorm{1.0 / Real(g.X) / Real(g.Y)}; ///< Normalization factor for FFT
 
   Real dt{-1};        ///< timestep
   Real elapsedT{0.0}; ///< total time elapsed
@@ -81,39 +83,6 @@ private:
   /// @}
 
   View::C_XY momentK(Dim m) { return g.sliceXY(moments_K, m); }
-
-
-
-  /// Prepares the δx and δy of viewPH in phase space, as well as over-normalizes
-  /// (after inverse FFT, values will be properly normalized)
-  void prepareDXY_PH(View::C_XY view_K, View::C_XY viewDX_K, View::C_XY viewDY_K) {
-    g.for_each_kxky([&](Dim kx, Dim ky) {
-      viewDX_K(kx, ky) = kx_(kx) * 1i * view_K(kx, ky) * XYNorm;
-      viewDY_K(kx, ky) = ky_(ky) * 1i * view_K(kx, ky) * XYNorm;
-    });
-  }
-
-  /// computes bracket [view, other], expects normalized values
-  void bracket(const View::R_XY &dxOp1, const View::R_XY &dyOp1, const View::R_XY &dxOp2,
-               const View::R_XY &dyOp2, const View::R_XY &output) {
-    g.for_each_xy([&](Dim x, Dim y) {
-      output(x, y) = dxOp1(x, y) * dyOp2(x, y) - dyOp1(x, y) * dxOp2(x, y);
-    });
-  }
-
-  /// bracket overload for DxDy params
-  void bracket(const DxDy<View::R_XY> &op1, const DxDy<View::R_XY> &op2, const View::R_XY &output) {
-    bracket(op1.DX, op1.DY, op2.DX, op2.DY, output);
-  }
-
-  /// Bracket that only takes inputs and allocates temporaries and output
-  [[nodiscard]] Buf::C_XY fullBracket(View::C_XY op1, View::C_XY op2);
-
-  /// Compute derivatives in real space and store them in output
-  void derivatives(const View::C_XY &value, DxDy<View::R_XY> output);
-
-  /// Bracket that takes in derivatives that were already computed
-  [[nodiscard]] Buf::C_XY halfBracket(DxDy<View::R_XY> op1, DxDy<View::R_XY> op2);
 
   // =================
   // Math helpers
