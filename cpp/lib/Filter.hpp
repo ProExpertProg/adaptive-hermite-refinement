@@ -46,6 +46,8 @@ private:
   static auto constexpr R_WIDTH = VReal::size();
   static auto constexpr C_WIDTH = VReal::size() / 2;
 
+  static auto constexpr KY_TILE = 4;
+
   VReal duplicateLower(VReal src) const; ///< duplicate lower half of src
   VReal duplicateUpper(VReal src) const; ///< duplicate upper half of src
 };

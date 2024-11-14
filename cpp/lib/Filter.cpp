@@ -46,6 +46,7 @@ void HouLiFilterCached1D::operator()(Grid::View::C_XY view) const {
 
 HouLiFilterCached1DVector::HouLiFilterCached1DVector(Grid const &grid) : HouLiFilterCached1D(grid) {
   assert(grid.KX > R_WIDTH);
+  assert(grid.KY % KY_TILE == 0);
 }
 
 void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) const {
@@ -53,6 +54,7 @@ void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) const {
   // An array of contiguous complex numbers is simply treated as a real array
   // with double the length.
   // The code is vectorized along the kx (continuous) dimension.
+  // To reuse kx-factors, we process KY_TILE rows at a time.
   // We load R_WIDTH factors_x and expand them into two registers, duplicating each element.
   // That way, each two consecutive real numbers (real and imaginary parts)
   // get multiplied with the same factor.
@@ -63,14 +65,16 @@ void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) const {
   // lower_fx = {kx, kx, kx+1, kx+1, kx+2, kx+2, kx+3, kx+3}
   // upper_fx = {kx+4, kx+4, kx+5, kx+5, kx+6, kx+6, kx+7, kx+7}
   //
-  // TODO multiple fy at once to better reuse fx
 
   static_assert(view.stride(0) == 1); // contiguous in kx
 
-  for (int ky = 0; ky < grid.KY; ++ky) {
+  for (int ky = 0; ky < grid.KY; ky += KY_TILE) {
     // avoid std::vector dereference inside loop:
     // broadcast fy value into vector
-    VReal vfy{factors_y[ky]};
+    std::array<VReal, KY_TILE> vfy;
+    for (int i = 0; i < KY_TILE; ++i) {
+      vfy[i] = factors_y[ky + i];
+    }
     // prepare iteration address for fx
     Real const *fx_addr = factors_x.data();
 
@@ -79,26 +83,30 @@ void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) const {
     // Process 1 vector of factors at a time (2 vectors of complex)
     for (; kx <= grid.KX - R_WIDTH; kx += R_WIDTH, fx_addr += R_WIDTH) {
       // get address for two vectors we're writing to
-      auto *view_addr = (Real *)&view(kx, ky);
-      auto *upper_view_addr = view_addr + R_WIDTH;
-      VReal input_lower{view_addr};
-      VReal input_upper{upper_view_addr};
+      auto lower_view_addr = [&](int i) { return (Real *)&view(kx, ky + i); };
+      auto upper_view_addr = [&](int i) { return (Real *)&view(kx + C_WIDTH, ky + i); };
 
       // Load factors
       VReal vfx_full{fx_addr};
 
       // Permute lower factors, multiply lower input
       VReal lower_fx = duplicateLower(vfx_full);
-      eve::store(input_lower * lower_fx * vfy, view_addr);
+      for (int i = 0; i < KY_TILE; ++i) {
+        eve::store(VReal{lower_view_addr(i)} * lower_fx * vfy[i], lower_view_addr(i));
+      }
 
       // Permute upper factors, multiply upper input
       VReal upper_fx = duplicateUpper(vfx_full);
-      eve::store(input_upper * upper_fx * vfy, upper_view_addr);
+      for (int i = 0; i < KY_TILE; ++i) {
+        eve::store(VReal{upper_view_addr(i)} * upper_fx * vfy[i], upper_view_addr(i));
+      }
     }
 
     // tail
     for (; kx < grid.KX; ++kx) {
-      view(kx, ky) *= factors_x[kx] * factors_y[ky];
+      for (int i = 0; i < KY_TILE; ++i) {
+        view(kx, ky + i) *= factors_x[kx] * factors_y[ky + i];
+      }
     }
   }
 }
