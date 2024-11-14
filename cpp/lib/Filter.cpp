@@ -4,7 +4,7 @@
 
 #include "Filter.hpp"
 namespace ahr {
-void HouLiFilter::operator()(Grid::View::C_XY view) {
+void HouLiFilter::operator()(Grid::View::C_XY view) const {
   grid.for_each_kxky([&](Dim kx, Dim ky) {
     view(kx, ky) *=
         exp(-36.0 * pow(kx_(kx) / grid.KX, 36.0)) * exp(-36.0 * pow(ky_(ky) / grid.KY, 36.0));
@@ -19,7 +19,7 @@ HouLiFilterCached::HouLiFilterCached(Grid const &grid)
   });
 }
 
-void HouLiFilterCached::operator()(Grid::View::C_XY view) {
+void HouLiFilterCached::operator()(Grid::View::C_XY view) const {
   grid.for_each_kxky([&](Dim kx, Dim ky) { view(kx, ky) *= factors(kx, ky); });
 }
 
@@ -33,7 +33,7 @@ HouLiFilterCached1D::HouLiFilterCached1D(Grid const &grid)
   }
 }
 
-void HouLiFilterCached1D::operator()(Grid::View::C_XY view) {
+void HouLiFilterCached1D::operator()(Grid::View::C_XY view) const {
   grid.for_each_kxky([&](Dim kx, Dim ky) {
     // Extra multiplication at runtime for lower memory cost
     view(kx, ky) *= factors_x[kx] * factors_y[ky];
