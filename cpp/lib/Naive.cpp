@@ -34,8 +34,8 @@ void Naive::init(std::string_view equilibriumName) {
   // Initialize equilibrium values
   auto [aParEq, phi] = equilibrium(equilibriumName, g);
 
-  fftHL(phi.to_mdspan(), phi_K.to_mdspan());
-  fftHL(aParEq.to_mdspan(), aParEq_K.to_mdspan());
+  fftHL(phi, phi_K);
+  fftHL(aParEq, aParEq_K);
 
   // Transform moments into phase space
   for (int m = G_MIN; m < g.M; ++m) {
@@ -468,7 +468,7 @@ Naive::Buf::R_XY Naive::getMoment(Dim m) const {
   g.for_each_kxky([&](Dim kx, Dim ky) { tmp(kx, ky) = moments_K(kx, ky, m); });
 
   Buf::R_XY out = g.rBufXY();
-  tf.bfft(tmp.to_mdspan(), out.to_mdspan());
+  tf.bfft(tmp, out);
 
   return out;
 }
