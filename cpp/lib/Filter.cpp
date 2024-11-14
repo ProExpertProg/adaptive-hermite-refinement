@@ -8,7 +8,7 @@
 #include <immintrin.h>
 
 namespace ahr {
-void HouLiFilter::operator()(Grid::View::C_XY view) {
+void HouLiFilter::operator()(Grid::View::C_XY view) const {
   grid.for_each_kxky([&](Dim kx, Dim ky) {
     view(kx, ky) *=
         exp(-36.0 * pow(kx_(kx) / grid.KX, 36.0)) * exp(-36.0 * pow(ky_(ky) / grid.KY, 36.0));
@@ -23,7 +23,7 @@ HouLiFilterCached::HouLiFilterCached(Grid const &grid)
   });
 }
 
-void HouLiFilterCached::operator()(Grid::View::C_XY view) {
+void HouLiFilterCached::operator()(Grid::View::C_XY view) const {
   grid.for_each_kxky([&](Dim kx, Dim ky) { view(kx, ky) *= factors(kx, ky); });
 }
 
@@ -37,7 +37,7 @@ HouLiFilterCached1D::HouLiFilterCached1D(Grid const &grid)
   }
 }
 
-void HouLiFilterCached1D::operator()(Grid::View::C_XY view) {
+void HouLiFilterCached1D::operator()(Grid::View::C_XY view) const {
   grid.for_each_kxky([&](Dim kx, Dim ky) {
     // Extra multiplication at runtime for lower memory cost
     view(kx, ky) *= factors_x[kx] * factors_y[ky];
@@ -49,7 +49,7 @@ HouLiFilterCached1DVector::HouLiFilterCached1DVector(Grid const &grid) : HouLiFi
   assert(grid.KY % KY_TILE == 0);
 }
 
-void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) {
+void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) const {
   // This method applies the HouLi filter to view using vector instructions.
   // An array of contiguous complex numbers is simply treated as a real array
   // with double the length.
@@ -76,7 +76,7 @@ void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) {
       vfy[i] = factors_y[ky + i];
     }
     // prepare iteration address for fx
-    Real *fx_addr = factors_x.data();
+    Real const *fx_addr = factors_x.data();
 
     int kx = 0;
     // Make sure the last element in the 2nd vector isn't past the end
@@ -112,22 +112,22 @@ void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) {
 }
 
 #ifdef AVX512_ENABLED
-HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateLower(VReal src) {
+HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateLower(VReal src) const {
   static_assert(R_WIDTH == 8);
   const VIdx lower_idx{0, 0, 1, 1, 2, 2, 3, 3};
   return _mm512_permutex2var_pd(src, lower_idx, src);
 }
-HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateUpper(VReal src) {
+HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateUpper(VReal src) const {
   static_assert(R_WIDTH == 8);
   const VIdx upper_idx{4, 4, 5, 5, 6, 6, 7, 7};
   return _mm512_permutex2var_pd(src, upper_idx, src);
 }
 #else
-HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateLower(VReal src) {
+HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateLower(VReal src) const {
   static_assert(R_WIDTH == 2);
   return _mm_unpacklo_pd(src, src);
 }
-HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateUpper(VReal src) {
+HouLiFilterCached1DVector::VReal HouLiFilterCached1DVector::duplicateUpper(VReal src) const {
   static_assert(R_WIDTH == 2);
   return _mm_unpackhi_pd(src, src);
 }
