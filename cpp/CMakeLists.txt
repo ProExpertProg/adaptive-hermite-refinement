@@ -62,6 +62,7 @@ add_library(src-lib OBJECT lib/Naive.cpp lib/Naive.hpp lib/HermiteRunner.cpp lib
         lib/Transformer.hpp lib/Transformer.cpp
         lib/Exporter.hpp lib/Exporter.cpp
         lib/Filter.hpp lib/Filter.cpp
+        lib/Brackets.hpp lib/Brackets.cpp
 )
 target_include_directories(src-lib PUBLIC lib/)
 target_link_libraries(src-lib mdspan fftw-cpp cnpy spdlog::spdlog)
