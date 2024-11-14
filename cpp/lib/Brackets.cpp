@@ -1,16 +1,8 @@
 #include "Brackets.hpp"
-#include "Transformer.hpp"
 #include "Filter.hpp"
+#include "Transformer.hpp"
 
 namespace ahr {
-
-void Brackets::prepareDXY_PH(View::C_XY const &view_K, View::C_XY const &viewDX_K,
-                             View::C_XY const &viewDY_K) const {
-  grid.for_each_kxky([&](Dim kx, Dim ky) {
-    viewDX_K(kx, ky) = kx_(kx) * 1i * view_K(kx, ky) * XYNorm;
-    viewDY_K(kx, ky) = ky_(ky) * 1i * view_K(kx, ky) * XYNorm;
-  });
-}
 
 void Brackets::bracket(DxDy<View::R_XY> const &op1, DxDy<View::R_XY> const &op2,
                        View::R_XY const &output) const {
@@ -21,7 +13,7 @@ void Brackets::bracket(DxDy<View::R_XY> const &op1, DxDy<View::R_XY> const &op2,
 
 void Brackets::derivatives(View::C_XY const &op, DxDy<View::R_XY> output) const {
   DxDy<Buf::C_XY> Der_K{grid.KX, grid.KY};
-  prepareDXY_PH(op, Der_K.DX, Der_K.DY);
+  prepareDXY(op, Der_K);
   tf.bfft(Der_K.DX, output.DX);
   tf.bfft(Der_K.DY, output.DY);
 }
