@@ -6,8 +6,9 @@ namespace ahr {
 
 void PrepareDerivatives::operator()(View::C_XY const &in, DxDy<View::C_XY> out) const {
   grid.for_each_kxky([&](Dim kx, Dim ky) {
-    out.DX(kx, ky) = kx_(kx) * 1i * in(kx, ky) * XYNorm;
-    out.DY(kx, ky) = ky_(ky) * 1i * in(kx, ky) * XYNorm;
+    Complex in_norm = 1i * in(kx, ky) * XYNorm;
+    out.DX(kx, ky) = kx_(kx) * in_norm;
+    out.DY(kx, ky) = ky_(ky) * in_norm;
   });
 }
 
@@ -49,8 +50,9 @@ void PrepareDerivativesVector::operator()(View::C_XY const &in, DxDy<View::C_XY>
     // tail
     for (; kx < grid.KX; ++kx) {
       for (int i = 0; i < KY_TILE; ++i) {
-        out.DX(kx, ky + i) = kx_(kx) * 1i * in(kx, ky + i) * XYNorm;
-        out.DY(kx, ky + i) = ky_(ky + i) * 1i * in(kx, ky + i) * XYNorm;
+        Complex in_norm = 1i * in(kx, ky + i) * XYNorm;
+        out.DX(kx, ky + i) = kx_(kx) * in_norm;
+        out.DY(kx, ky + i) = ky_(ky + i) * in_norm;
       }
     }
   }
