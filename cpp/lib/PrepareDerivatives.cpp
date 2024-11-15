@@ -15,6 +15,8 @@ void PrepareDerivatives::operator()(View::C_XY const &in, DxDy<View::C_XY> out) 
 void PrepareDerivativesVector::operator()(View::C_XY const &in, DxDy<View::C_XY> out) const {
   eve::logical<VIdx> const even_mask{[](int idx, int) { return idx % 2 == 0; }};
   VReal const kx_v_init{[](int idx, int) { return Real(idx / 2); }};
+  VReal const norm_v{XYNorm};
+
   for (Dim ky = 0; ky < grid.KY; ky += KY_TILE) {
     // broadcast ky values
     using TileReal = std::array<VReal, KY_TILE>;
@@ -40,7 +42,7 @@ void PrepareDerivativesVector::operator()(View::C_XY const &in, DxDy<View::C_XY>
         // selectively negate
         auto mul_with_i = eve::minus[even_mask](swapped);
         // normalize
-        auto in_norm = mul_with_i * XYNorm;
+        auto in_norm = mul_with_i * norm_v;
 
         eve::store(kx_v * in_norm, out_dx(i));
         eve::store(ky_v[i] * in_norm, out_dy(i));
