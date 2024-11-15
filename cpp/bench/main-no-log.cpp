@@ -2,7 +2,6 @@
 #include <spdlog/cfg/env.h>
 #include <spdlog/spdlog.h>
 
-
 int main(int argc, char **argv) {
   // No logging in benchmarks (unless overridden via environment variable)
   spdlog::set_level(spdlog::level::off);
