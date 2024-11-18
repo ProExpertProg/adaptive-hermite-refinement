@@ -104,20 +104,7 @@ template <param_like BaseParam> struct WithEquilibrium : BaseParam {
   std::string to_param_str() const { return BaseParam::to_param_str() + "_" + equilibrium; }
 };
 
-// using TesterParam = WithDiffusion<NaiveParam>;
-
-class TesterWithOutput : public ::testing::Test {
-protected:
-  // Ignore output
-  std::ostringstream out{};
-
-  void TearDown() override {
-    if (HasFailure()) { std::cout << "============\nFull output:\n" << out.str() << std::endl; }
-  }
-};
-
-template <class Param>
-class NaiveTester : public TesterWithOutput, public testing::WithParamInterface<Param> {
+template <class Param> class NaiveTester : public testing::TestWithParam<Param> {
 public:
   class Printer {
   public:

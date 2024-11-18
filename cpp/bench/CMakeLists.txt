@@ -19,8 +19,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(google-benchmark)
 
-add_executable(bench-naive naive.cpp)
-target_link_libraries(bench-naive src-lib benchmark::benchmark_main)
+add_executable(bench-naive naive.cpp main-no-log.cpp)
+target_link_libraries(bench-naive src-lib benchmark::benchmark)
 
 if (ENABLE_CILK)
     add_executable(bench-fftw-cilk fftw-cilk.cpp)
