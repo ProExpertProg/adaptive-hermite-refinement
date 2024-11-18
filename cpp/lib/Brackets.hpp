@@ -15,8 +15,8 @@ public:
 private:
   Grid const &grid;
   Transformer const &tf;
-  PrepareDerivatives prepareDXY{grid};
   HouLiFilterCached1DVector const &hlFilter; // TODO vectorized
+  PrepareDerivativesVector prepareDXY{grid};
 
   using View = Grid::View;
   using Buf = Grid::Buf;
