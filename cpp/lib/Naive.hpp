@@ -108,6 +108,13 @@ private:
 
   /// sq(∇⊥) A∥, also parallel electron velocity
   Buf2D_K ueKPar_K{KX, KY}, ueKPar_K_New{KX, KY};
+
+  /// Derivatives of moments
+  DxDy<Buf3D> dGM{X, Y, M};
+
+  /// Derivatives of phi and ueKPar
+  DxDy<Buf2D> dPhi{X, Y}, dUEKPar{X, Y};
+
   /// @}
 
   void for_each_xy(std::invocable<Dim, Dim> auto fun) const {

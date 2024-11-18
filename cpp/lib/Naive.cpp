@@ -64,13 +64,15 @@ void Naive::init(std::string_view equilibriumName) {
     moments_K(kx, ky, A_PAR) = aParEq_K(kx, ky);
     ueKPar_K(kx, ky) = -kPerp2(kx, ky) * moments_K(kx, ky, A_PAR);
   });
+
+  derivatives(phi_K, dPhi);
+  derivatives(ueKPar_K, dUEKPar);
+  for (int m = 0; m < M; ++m) {
+    derivatives(sliceXY(moments_K, m), sliceXY(dGM, m));
+  }
 }
 
 void Naive::run(Dim N, Dim saveInterval) {
-  // store all derivatives
-  DxDy<Buf3D> dGM{X, Y, M};
-  DxDy<Buf2D> dPhi{X, Y}, dUEKPar{X, Y};
-
   // isothermal if only running with 2 moments
   assert(M >= 4 or M == 2);
 
@@ -90,12 +92,6 @@ void Naive::run(Dim N, Dim saveInterval) {
     }
 
     // predictor step
-    derivatives(phi_K, dPhi);
-    derivatives(ueKPar_K, dUEKPar);
-    for (int m = 0; m < M; ++m) {
-      derivatives(sliceXY(moments_K, m), sliceXY(dGM, m));
-    }
-
     if (repeat or divergent) {
       out << std::boolalpha << "repeat: " << repeat << ", divergent:" << divergent << std::endl;
       repeat = false;
@@ -437,6 +433,11 @@ void Naive::run(Dim N, Dim saveInterval) {
     std::swap(moments_K, momentsNew_K);
     std::swap(phi_K, phi_K_New);
     std::swap(ueKPar_K, ueKPar_K_New);
+
+    // Also swap derivatives
+    std::swap(dPhi, dPhi_Loop);
+    std::swap(dUEKPar, dUEKPar_Loop);
+    std::swap(dGM, dGM_Loop);
 
     // Must be after swap for now, it looks at current, not new values
     auto [magnetic, kinetic] = calculateEnergies();
