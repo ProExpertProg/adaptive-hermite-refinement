@@ -80,6 +80,13 @@ private:
 
   /// sq(∇⊥) A∥, also parallel electron velocity
   Buf::C_XY ueKPar_K, ueKPar_K_New;
+
+  /// Derivatives of moments
+  DxDy<Buf::R_MXY> dGM;
+
+  /// Derivatives of phi and ueKPar
+  DxDy<Buf::R_XY> dPhi, dUEKPar;
+
   /// @}
 
   View::C_XY momentK(Dim m) { return g.sliceXY(moments_K, m); }

@@ -11,7 +11,8 @@ Naive::Naive(Dim M, Dim X, Dim Y)
     : HermiteRunner(), g(M, X, Y),
       // TODO move to tracker class
       moments_K(g.cBufMXY()), momentsNew_K(g.cBufMXY()), phi_K(g.cBufXY()), phi_K_New(g.cBufXY()),
-      ueKPar_K(g.cBufXY()), ueKPar_K_New(g.cBufXY()), aParEq_K(g.cBufXY()) {
+      ueKPar_K(g.cBufXY()), ueKPar_K_New(g.cBufXY()), aParEq_K(g.cBufXY()), dGM(g.dBufMXY()),
+      dPhi(g.dBufXY()), dUEKPar(g.dBufXY()) {
   assert(M >= 4 or M == 2);
   // X and Y must be powers of 2
   assert((X & (X - 1)) == 0);
@@ -48,13 +49,15 @@ void Naive::init(std::string_view equilibriumName) {
     moments_K(kx, ky, A_PAR) = aParEq_K(kx, ky);
     ueKPar_K(kx, ky) = -kPerp2(kx, ky) * moments_K(kx, ky, A_PAR);
   });
+
+  br.derivatives(phi_K, dPhi);
+  br.derivatives(ueKPar_K, dUEKPar);
+  for (int m = 0; m < g.M; ++m) {
+    br.derivatives(momentK(m), Grid::sliceXY(dGM, m));
+  }
 }
 
 void Naive::run(Dim N, Dim saveInterval) {
-  // store all derivatives
-  DxDy<Buf::R_MXY> dGM = g.dBufMXY();
-  DxDy<Buf::R_XY> dPhi = g.dBufXY(), dUEKPar = g.dBufXY();
-
   // isothermal if only running with 2 moments
   assert(g.M >= 4 or g.M == 2);
 
@@ -74,12 +77,6 @@ void Naive::run(Dim N, Dim saveInterval) {
     }
 
     // predictor step
-    br.derivatives(phi_K, dPhi);
-    br.derivatives(ueKPar_K, dUEKPar);
-    for (int m = 0; m < g.M; ++m) {
-      br.derivatives(momentK(m), Grid::sliceXY(dGM, m));
-    }
-
     if (repeat or divergent) {
       spdlog::debug("repeat: {}, divergent: {}", repeat, divergent);
       repeat = false;
@@ -425,6 +422,11 @@ void Naive::run(Dim N, Dim saveInterval) {
     std::swap(moments_K, momentsNew_K);
     std::swap(phi_K, phi_K_New);
     std::swap(ueKPar_K, ueKPar_K_New);
+
+    // Also swap derivatives
+    std::swap(dPhi, dPhi_Loop);
+    std::swap(dUEKPar, dUEKPar_Loop);
+    std::swap(dGM, dGM_Loop);
 
     // Must be after swap for now, it looks at current, not new values
     auto [magnetic, kinetic] = calculateEnergies();
