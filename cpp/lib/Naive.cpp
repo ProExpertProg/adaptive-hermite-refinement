@@ -28,8 +28,8 @@ Naive::Naive(std::ostream &out, Dim M, Dim X, Dim Y) : HermiteRunner(out), M(M),
 
 void Naive::hlFilter(CViewXY &complexArray) {
   for_each_kxky([&](Dim kx, Dim ky) {
-    complexArray(kx, ky) *=
-        exp(-36.0 * pow(kx_(kx) / KX, 36.0)) * exp(-36.0 * pow(ky_(ky) / KY, 36.0));
+    complexArray(kx, ky) *= std::exp(-36.0 * std::pow(kx_(kx) / KX, 36.0)) *
+                            std::exp(-36.0 * std::pow(ky_(ky) / KY, 36.0));
   });
 }
 

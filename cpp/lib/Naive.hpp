@@ -212,7 +212,7 @@ private:
   }
 
   [[nodiscard]] Real exp_gm(Dim m, Real hyper_nuei, Real dt) const {
-    return exp(-(Real(m) * nu_ei + std::pow(m, 2 * hyper_morder) * hyper_nuei) * dt);
+    return std::exp(-(Real(m) * nu_ei + std::pow(m, 2 * hyper_morder) * hyper_nuei) * dt);
   }
 
   [[nodiscard]] Real exp_eta(Dim kx, Dim ky, Real res2, Real dt) const {
