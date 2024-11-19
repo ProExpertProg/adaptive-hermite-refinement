@@ -4,6 +4,8 @@
 #include "typedefs.hpp"
 
 namespace ahr {
+auto sq(auto x) { return x * x; }
+
 using std::numbers::pi;
 /// Box
 constexpr Real lx = 1.0 * 2 * pi;
@@ -49,7 +51,8 @@ struct HyperCoefficients {
   Real nu_g, nu_2, eta2, nu_ei;
 
   static HyperCoefficients calculate(Real dt, Grid const &g) {
-    Real kPerpMax2 = std::pow(g.KX, 2) + std::pow(Real(g.KY) / 2, 2);
+    return {0, 0, 0, 0};
+    Real kPerpMax2 = sq(g.KX) + sq(Real(g.KY) / 2);
 
     HyperCoefficients ret{};
     ret.nu_g = hyper_coef_g / dt / std::pow(kPerpMax2, hyper_order_g);

@@ -109,16 +109,15 @@ private:
   [[nodiscard]] Real kPerp(Dim kx, Dim ky) const { return std::sqrt(kPerp2(kx, ky)); }
 
   [[nodiscard]] Real exp_nu(Dim kx, Dim ky, Real nu2, Real dt) const {
-    return std::exp(-(nu * kPerp2(kx, ky) + nu2 * std::pow(kPerp2(kx, ky), hyper_order)) * dt);
+    return std::exp(-(nu * kPerp2(kx, ky)) * dt);
   }
 
   [[nodiscard]] Real exp_gm(Dim m, Real hyper_nuei, Real dt) const {
-    return exp(-(Real(m) * nu_ei + std::pow(m, 2 * hyper_morder) * hyper_nuei) * dt);
+    return std::exp(-(Real(m) * nu_ei + std::pow(m, 2 * hyper_morder) * hyper_nuei) * dt);
   }
 
   [[nodiscard]] Real exp_eta(Dim kx, Dim ky, Real res2, Real dt) const {
-    return std::exp(-(res * kPerp2(kx, ky) + res2 * std::pow(kPerp2(kx, ky), hyper_order)) * dt /
-                    (1.0 + kPerp2(kx, ky) * de * de));
+    return std::exp(-(res * kPerp2(kx, ky)) * dt / (1.0 + kPerp2(kx, ky) * de * de));
   }
 
   /// getTimestep calculates flows and magnetic fields to determine a dt.
@@ -149,7 +148,7 @@ private:
       }
     });
 
-    Real kperpDum2 = std::pow(ky_(g.KY / 2), 2) + std::pow(Real(g.KX), 2);
+    Real kperpDum2 = sq(ky_(g.KY / 2)) + sq(Real(g.KX));
     Real omegaKaw;
     if (rhoI < smallRhoI) {
       omegaKaw = std::sqrt(1.0 + kperpDum2 * (3.0 / 4.0 * rhoI * rhoI + rhoS * rhoS)) *
