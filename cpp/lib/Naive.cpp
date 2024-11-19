@@ -26,7 +26,7 @@ Naive::Naive(std::ostream &out, Dim M, Dim X, Dim Y) : HermiteRunner(out), M(M),
   assert((Y & (Y - 1)) == 0);
 }
 
-void Naive::hlFilter(CViewXY &complexArray) {
+__attribute__((optimize("-ffast-math"))) void Naive::hlFilter(CViewXY &complexArray) {
   for_each_kxky([&](Dim kx, Dim ky) {
     complexArray(kx, ky) *= std::exp(-36.0 * std::pow(kx_(kx) / KX, 36.0)) *
                             std::exp(-36.0 * std::pow(ky_(ky) / KY, 36.0));
