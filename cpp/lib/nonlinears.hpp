@@ -7,7 +7,7 @@ namespace ahr {
   Real ax = std::abs(x);
 
   if (ax < 3.75) {
-    Real y = std::pow(x / 3.75, 2);
+    Real y = sq(x / 3.75);
     return 1.0 + y * (3.5156229 +
                       y * (3.0899424 +
                            y * (1.2067492 + y * (0.2659732 + y * (0.360768e-1 + y * 0.45813e-2)))));
@@ -45,11 +45,11 @@ namespace nonlinear {
 [[nodiscard]] inline Complex semiImplicitOp(Real dt, Real bPerpMax, Real aa0, Real kPerp2) {
   if (rhoI <= smallRhoI) {
     return aa0 * aa0 * (1 + kPerp2 * (3.0 / 4.0 * rhoI * rhoI + rhoS * rhoS)) * kPerp2 *
-           std::pow(bPerpMax * dt, 2) / (1 + kPerp2 * de * de);
+           sq(bPerpMax * dt) / (1 + kPerp2 * de * de);
   } else {
     return aa0 * aa0 *
            (3.0 * rhoS * rhoS - rhoI * rhoI / (Gamma0(0.5 * kPerp2 * rhoI * rhoI) - 1)) *
-           std::pow(kPerp2 * bPerpMax * dt, 2) / (1 + kPerp2 * de * de);
+           sq(kPerp2 * bPerpMax * dt) / (1 + kPerp2 * de * de);
   }
 }
 
@@ -79,8 +79,7 @@ namespace nonlinear {
 [[nodiscard]] inline Complex GLastBracketFactor(Dim M, Real kPerp2, HyperCoefficients hyper) {
   // Note that this is ngtot + 1 in Viriato. Here, the last moment is M-1, so this should be M.
   auto M1 = double(M);
-  return (rhoS * rhoS / de / de * M1) / (M1 * nu_ei + std::pow(M1, 2 * hyper_morder) * hyper.nu_ei +
-                                         nu * kPerp2 + hyper.nu_2 * std::pow(kPerp2, hyper_order));
+  return (rhoS * rhoS / de / de * M1) / (M1 * nu_ei + nu * kPerp2);
 }
 } // namespace nonlinear
 } // namespace ahr

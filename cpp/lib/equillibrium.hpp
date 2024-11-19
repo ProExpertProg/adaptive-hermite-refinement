@@ -19,8 +19,8 @@ auto equilibriumGauss(Grid const &g) {
 
   g.for_each_xy([&](Dim x, Dim y) {
     using std::numbers::pi;
-    aParEq(x, y) = a0 * std::exp(-std::pow(yy(y, g.Y) * 2 * pi * 2 / ly, 2)) *
-                   std::exp(-std::pow(xx(x, g.X) * 2 * pi * 2 / lx, 2));
+    aParEq(x, y) = a0 * std::exp(-sq(yy(y, g.Y) * 2 * pi * 2 / ly)) *
+                   std::exp(-sq(xx(x, g.X) * 2 * pi * 2 / lx));
 
     phiEq(x, y) = 0;
   });
