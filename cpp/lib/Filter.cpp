@@ -6,16 +6,16 @@
 namespace ahr {
 void HouLiFilter::operator()(Grid::View::C_XY view) const {
   grid.for_each_kxky([&](Dim kx, Dim ky) {
-    view(kx, ky) *= exp(-36.0 * pow(grid.kx_(kx) / grid.KX, 36.0)) *
-                    exp(-36.0 * pow(grid.ky_(ky) / grid.KY, 36.0));
+    view(kx, ky) *= std::exp(-36.0 * std::pow(grid.kx_(kx) / grid.KX, 36.0)) *
+                    std::exp(-36.0 * std::pow(grid.ky_(ky) / grid.KY, 36.0));
   });
 }
 
 HouLiFilterCached::HouLiFilterCached(Grid const &grid)
     : HouLiFilter(grid), factors(std::array{grid.KX, grid.KY}) {
   grid.for_each_kxky([&](Dim kx, Dim ky) {
-    factors(kx, ky) = exp(-36.0 * pow(grid.kx_(kx) / grid.KX, 36.0)) *
-                      exp(-36.0 * pow(grid.ky_(ky) / grid.KY, 36.0));
+    factors(kx, ky) = std::exp(-36.0 * std::pow(grid.kx_(kx) / grid.KX, 36.0)) *
+                      std::exp(-36.0 * std::pow(grid.ky_(ky) / grid.KY, 36.0));
   });
 }
 
@@ -26,10 +26,10 @@ void HouLiFilterCached::operator()(Grid::View::C_XY view) const {
 HouLiFilterCached1D::HouLiFilterCached1D(Grid const &grid)
     : HouLiFilter(grid), factors_x(grid.KX), factors_y(grid.KY) {
   for (Dim kx = 0; kx < grid.KX; ++kx) {
-    factors_x.at(kx) = exp(-36.0 * pow(grid.kx_(kx) / grid.KX, 36.0));
+    factors_x.at(kx) = std::exp(-36.0 * std::pow(grid.kx_(kx) / grid.KX, 36.0));
   }
   for (Dim ky = 0; ky < grid.KY; ++ky) {
-    factors_y.at(ky) = exp(-36.0 * pow(grid.ky_(ky) / grid.KY, 36.0));
+    factors_y.at(ky) = std::exp(-36.0 * std::pow(grid.ky_(ky) / grid.KY, 36.0));
   }
 }
 
