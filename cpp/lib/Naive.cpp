@@ -494,7 +494,7 @@ Real Naive::getTimestep(DxDy<View::R_XY> dPhi, DxDy<View::R_XY> dNE, DxDy<View::
     }
   });
 
-  Real kperpDum2 = std::pow(g.ky_(g.KY / 2), 2) + std::pow(Real(g.KX), 2);
+  Real kperpDum2 = sq(g.ky_(g.KY / 2)) + sq(Real(g.KX));
   Real omegaKaw;
   if (rhoI < smallRhoI) {
     omegaKaw = std::sqrt(1.0 + kperpDum2 * (3.0 / 4.0 * rhoI * rhoI + rhoS * rhoS)) *

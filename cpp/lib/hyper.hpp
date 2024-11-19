@@ -7,6 +7,7 @@ struct HyperCoefficients {
   Real nu_g, nu_2, eta2, nu_ei;
 
   static HyperCoefficients calculate(Real dt, Grid const &g) {
+    return {0.0, 0.0, 0.0, 0.0};
     Real kPerpMax2 = std::pow(g.KX, 2) + std::pow(Real(g.KY) / 2, 2);
 
     HyperCoefficients ret{};

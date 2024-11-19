@@ -3,6 +3,8 @@
 #include "typedefs.hpp"
 
 namespace ahr {
+auto sq(auto x) { return x * x; }
+
 using std::numbers::pi;
 /// Box
 constexpr Real lx = 1.0 * 2 * pi;
