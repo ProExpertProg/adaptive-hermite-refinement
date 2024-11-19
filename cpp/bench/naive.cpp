@@ -13,7 +13,7 @@ static void BM_Naive(benchmark::State &state) {
   naive.init("gauss");
 
   // Lower CFL -> lower dt -> fewer repeats
-  CFLFrac = 0.05;
+  // CFLFrac = 0.05; TODO
 
   // Run once, to get the timestep right, and avoid repeats during benchmarking
   naive.run(1, 0);
