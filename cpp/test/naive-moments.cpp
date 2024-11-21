@@ -71,7 +71,7 @@ TEST_P(NaiveMoments, CheckMoments) {
   nu = p.nu;
   res = p.res;
 
-  Naive naive{out, p.M, p.X, p.X};
+  Naive naive{p.M, p.X, p.X};
 
   naive.init(p.equilibrium);
   naive.run(p.N + 1, 0); // no saving
@@ -124,8 +124,8 @@ TEST_P(NaiveMomentsMultiRun, RunMultipleTimes) {
   nu = p.nu;
   res = p.res;
 
-  Naive naive{out, p.M, p.X, p.X};
-  Naive naive2{out, p.M, p.X, p.X};
+  Naive naive{p.M, p.X, p.X};
+  Naive naive2{p.M, p.X, p.X};
 
   naive.init(p.equilibrium);
   naive2.init(p.equilibrium);
