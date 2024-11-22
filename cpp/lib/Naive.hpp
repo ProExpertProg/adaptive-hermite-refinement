@@ -8,6 +8,7 @@
 #include "constants.hpp"
 #include "debug.hpp"
 #include "grid.hpp"
+#include "hyper.hpp"
 #include "nonlinears.hpp"
 
 #include <fftw-cpp/fftw-cpp.h>
@@ -96,20 +97,8 @@ private:
   // TODO other file/class
   // =================
 
-  [[nodiscard]] Real ky_(Dim ky) const {
-    return (ky <= (g.KY / 2) ? Real(ky) : Real(ky) - Real(g.KY)) * Real(lx) / Real(ly);
-  }
-  [[nodiscard]] Real kx_(Dim kx) const { return Real(kx); }
-
-  [[nodiscard]] Real kPerp2(Dim kx, Dim ky) const {
-    auto dkx = kx_(kx), dky = ky_(ky);
-    return dkx * dkx + dky * dky;
-  }
-
-  [[nodiscard]] Real kPerp(Dim kx, Dim ky) const { return std::sqrt(kPerp2(kx, ky)); }
-
   [[nodiscard]] Real exp_nu(Dim kx, Dim ky, Real nu2, Real dt) const {
-    return std::exp(-(nu * kPerp2(kx, ky) + nu2 * std::pow(kPerp2(kx, ky), hyper_order)) * dt);
+    return std::exp(-(nu * g.kPerp2(kx, ky) + nu2 * std::pow(g.kPerp2(kx, ky), hyper_order)) * dt);
   }
 
   [[nodiscard]] Real exp_gm(Dim m, Real hyper_nuei, Real dt) const {
@@ -117,66 +106,14 @@ private:
   }
 
   [[nodiscard]] Real exp_eta(Dim kx, Dim ky, Real res2, Real dt) const {
-    return std::exp(-(res * kPerp2(kx, ky) + res2 * std::pow(kPerp2(kx, ky), hyper_order)) * dt /
-                    (1.0 + kPerp2(kx, ky) * de * de));
+    return std::exp(-(res * g.kPerp2(kx, ky) + res2 * std::pow(g.kPerp2(kx, ky), hyper_order)) *
+                    dt / (1.0 + g.kPerp2(kx, ky) * de * de));
   }
 
   /// getTimestep calculates flows and magnetic fields to determine a dt.
   /// It also updates bPerpMax in the process.
   [[nodiscard]] Real getTimestep(DxDy<View::R_XY> dPhi, DxDy<View::R_XY> dNE,
-                                 DxDy<View::R_XY> dAPar) {
-    // compute flows
-    DxDy<View::R_XY> ve, b;
-    Real vyMax{0}, vxMax{0}, bxMax{0}, byMax{0};
-    bPerpMax = 0;
-
-    // Note that this is minus in Viriato, but we don't care because we're taking the absolute value
-    // anyway.
-    ve.DX = dPhi.DY;
-    ve.DY = dPhi.DX;
-    b.DX = dAPar.DY;
-    b.DY = dAPar.DX;
-
-    g.for_each_xy([&](Dim x, Dim y) {
-      bxMax = std::max(bxMax, std::abs(b.DX(x, y)));
-      byMax = std::max(byMax, std::abs(b.DY(x, y)));
-      bPerpMax = std::max(bPerpMax, std::sqrt(b.DX(x, y) * b.DX(x, y) + b.DY(x, y) * b.DY(x, y)));
-      vxMax = std::max(vxMax, std::abs(ve.DX(x, y)));
-      vyMax = std::max(vyMax, std::abs(ve.DY(x, y)));
-      if (rhoI >= smallRhoI) {
-        vxMax = std::max(vxMax, rhoS * rhoS * std::abs(dNE.DX(x, y)));
-        vyMax = std::max(vyMax, rhoS * rhoS * std::abs(dNE.DY(x, y)));
-      }
-    });
-
-    Real kperpDum2 = std::pow(ky_(g.KY / 2), 2) + std::pow(Real(g.KX), 2);
-    Real omegaKaw;
-    if (rhoI < smallRhoI) {
-      omegaKaw = std::sqrt(1.0 + kperpDum2 * (3.0 / 4.0 * rhoI * rhoI + rhoS * rhoS)) *
-                 ky_(g.KY / 2) * bPerpMax / (1.0 + kperpDum2 * de * de);
-    } else {
-      omegaKaw =
-          std::sqrt(kperpDum2 *
-                    (rhoS * rhoS - rhoI * rhoI / (Gamma0(0.5 * kperpDum2 * rhoI * rhoI) - 1.0))) *
-          ky_(g.KY / 2 + 1) * bPerpMax / std::sqrt(1.0 + kperpDum2 * de * de);
-    }
-
-    Real dx = lx / Real(g.X), dy = ly / Real(g.Y);
-
-    Real CFLFlow;
-    if (g.M > 2) {
-      CFLFlow = std::min({dx / vxMax, dy / vyMax, 2.0 / omegaKaw,
-                          std::min(dx / bxMax, dy / byMax) / (rhoS / de) / std::sqrt(LAST)});
-    } else {
-      CFLFlow = std::min({dx / vxMax, dy / vyMax, 2.0 / omegaKaw, dx / bxMax, dy / byMax});
-    }
-
-    spdlog::debug("vxmax: {}, vymax: {}, bxmax: {}, bymax: {}", vxMax, vyMax, bxMax, byMax);
-    spdlog::debug("bperp_max: {}, omegakaw: {}, CFLFlow: {}", bPerpMax, omegaKaw, CFLFlow);
-    spdlog::debug("Calculated timestep: {}", CFLFrac * CFLFlow);
-
-    return CFLFrac * CFLFlow;
-  }
+                                 DxDy<View::R_XY> dAPar);
 
 public:
   struct Energies {

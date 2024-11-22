@@ -12,12 +12,6 @@ public:
 
 protected:
   Grid const &grid;
-
-  // TODO extract to common utility
-  [[nodiscard]] Real ky_(Dim ky) const {
-    return (ky <= (grid.KY / 2) ? Real(ky) : Real(ky) - Real(grid.KY)) * Real(lx) / Real(ly);
-  }
-  [[nodiscard]] Real kx_(Dim kx) const { return Real(kx); }
 };
 
 class HouLiFilterCached : HouLiFilter {

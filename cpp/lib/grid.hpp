@@ -1,5 +1,6 @@
 #pragma once
 
+#include "constants.hpp"
 #include "typedefs.hpp"
 
 #include <fftw-cpp/fftw-cpp.h>
@@ -117,6 +118,18 @@ public:
       }
     }
   }
+
+  [[nodiscard]] Real ky_(Dim ky) const {
+    return (ky <= (KY / 2) ? Real(ky) : Real(ky) - Real(KY)) * Real(lx) / Real(ly);
+  }
+  [[nodiscard]] Real kx_(Dim kx) const { return Real(kx); }
+
+  [[nodiscard]] Real kPerp2(Dim kx, Dim ky) const {
+    auto dkx = kx_(kx), dky = ky_(ky);
+    return dkx * dkx + dky * dky;
+  }
+
+  [[nodiscard]] Real kPerp(Dim kx, Dim ky) const { return std::sqrt(kPerp2(kx, ky)); }
 };
 
 // Options for various buffer types:
