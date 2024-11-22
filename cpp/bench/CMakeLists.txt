@@ -25,6 +25,9 @@ target_link_libraries(bench-naive src-lib benchmark::benchmark)
 add_executable(bench-hl-filter hl-filter.cpp)
 target_link_libraries(bench-hl-filter src-lib benchmark::benchmark_main)
 
+add_executable(bench-exps exps.cpp)
+target_link_libraries(bench-exps src-lib benchmark::benchmark_main)
+
 if (ENABLE_CILK)
     add_executable(bench-fftw-cilk fftw-cilk.cpp)
     target_link_libraries(bench-fftw-cilk fftw-cpp benchmark::benchmark fftw3_threads)
