@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Brackets.hpp"
+#include "Exponentials.hpp"
 #include "Exporter.hpp"
 #include "Filter.hpp"
 #include "HermiteRunner.hpp"
@@ -97,25 +98,12 @@ private:
   // TODO other file/class
   // =================
 
-  [[nodiscard]] Real exp_nu(Dim kx, Dim ky) const {
-    return std::exp(
-        -(nu * g.kPerp2(kx, ky) + hyper.nu_2 * std::pow(g.kPerp2(kx, ky), hyper_order)) * dt);
-  }
-
-  [[nodiscard]] Real exp_nu_g(Dim kx, Dim ky) const {
-    return std::exp(
-        -(nu * g.kPerp2(kx, ky) + hyper.nu_g * std::pow(g.kPerp2(kx, ky), hyper_order)) * dt);
-  }
-
-  [[nodiscard]] Real exp_gm(Dim m) const {
-    return std::exp(-(Real(m) * nu_ei + std::pow(m, 2 * hyper_morder) * hyper.nu_ei) * dt);
-  }
-
-  [[nodiscard]] Real exp_eta(Dim kx, Dim ky) const {
-    return std::exp(
-        -(res * g.kPerp2(kx, ky) + hyper.eta2 * std::pow(g.kPerp2(kx, ky), hyper_order)) * dt /
-        (1.0 + g.kPerp2(kx, ky) * de * de));
-  }
+  /// \defgroup @{
+  exp::Nu exp_nu{g};
+  exp::NuG exp_nu_g{g};
+  exp::Eta exp_eta{g};
+  exp::GM exp_gm{g};
+  /// @}
 
   /// getTimestep calculates flows and magnetic fields to determine a dt.
   /// It also updates bPerpMax in the process.

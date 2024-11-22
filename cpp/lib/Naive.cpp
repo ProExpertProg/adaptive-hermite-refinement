@@ -81,8 +81,13 @@ void Naive::run(Dim N, Dim saveInterval) {
       divergent = false;
     } else if (dt == -1) {
       dt = getTimestep(dPhi, Grid::sliceXY(dGM, N_E), Grid::sliceXY(dGM, A_PAR));
-      hyper = HyperCoefficients::calculate(dt, g);
     }
+
+    hyper = HyperCoefficients::calculate(dt, g);
+    exp_nu.update(hyper, dt);
+    exp_nu_g.update(hyper, dt);
+    exp_eta.update(hyper, dt);
+    exp_gm.update(hyper, dt);
 
     spdlog::debug("dt: {}", dt);
 
@@ -396,7 +401,6 @@ void Naive::run(Dim N, Dim saveInterval) {
     Real tempDt =
         getTimestep(dPhi_Loop, Grid::sliceXY(dGM_Loop, N_E), Grid::sliceXY(dGM_Loop, A_PAR));
     dt = updateTimestep(dt, tempDt, noInc, relative_error);
-    hyper = HyperCoefficients::calculate(dt, g);
 
     spdlog::info("Moving on to next timestep: {}\n"
                  "dt is: {}",
@@ -419,7 +423,6 @@ void Naive::run(Dim N, Dim saveInterval) {
     spdlog::info("t={} magnetic energy: {}, kinetic energy: {}", t, magnetic, kinetic);
 
     // Log moment values when level is trace (most verbose)
-
     for (Dim m = 0; m < g.M; ++m) {
       spdlog::trace(
           "t={} m={}:\n{}", t, m,
