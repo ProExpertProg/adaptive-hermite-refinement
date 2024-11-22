@@ -42,14 +42,14 @@ public:
   Brackets br{g, tf, hlFilter};
 
 private:
-
   using View = Grid::View;
   using Buf = Grid::Buf;
 
   const Real XYNorm{1.0 / Real(g.X) / Real(g.Y)}; ///< Normalization factor for FFT
 
-  Real dt{-1};        ///< timestep
-  Real elapsedT{0.0}; ///< total time elapsed
+  Real dt{-1};               ///< timestep
+  Real elapsedT{0.0};        ///< total time elapsed
+  HyperCoefficients hyper{}; ///< Hyper-coefficients, updated every dt
 
   void fftHL(View::R_XY in, View::C_XY out); ///< FFT with Hou-Li Filter
 
@@ -97,17 +97,24 @@ private:
   // TODO other file/class
   // =================
 
-  [[nodiscard]] Real exp_nu(Dim kx, Dim ky, Real nu2, Real dt) const {
-    return std::exp(-(nu * g.kPerp2(kx, ky) + nu2 * std::pow(g.kPerp2(kx, ky), hyper_order)) * dt);
+  [[nodiscard]] Real exp_nu(Dim kx, Dim ky) const {
+    return std::exp(
+        -(nu * g.kPerp2(kx, ky) + hyper.nu_2 * std::pow(g.kPerp2(kx, ky), hyper_order)) * dt);
   }
 
-  [[nodiscard]] Real exp_gm(Dim m, Real hyper_nuei, Real dt) const {
-    return std::exp(-(Real(m) * nu_ei + std::pow(m, 2 * hyper_morder) * hyper_nuei) * dt);
+  [[nodiscard]] Real exp_nu_g(Dim kx, Dim ky) const {
+    return std::exp(
+        -(nu * g.kPerp2(kx, ky) + hyper.nu_g * std::pow(g.kPerp2(kx, ky), hyper_order)) * dt);
   }
 
-  [[nodiscard]] Real exp_eta(Dim kx, Dim ky, Real res2, Real dt) const {
-    return std::exp(-(res * g.kPerp2(kx, ky) + res2 * std::pow(g.kPerp2(kx, ky), hyper_order)) *
-                    dt / (1.0 + g.kPerp2(kx, ky) * de * de));
+  [[nodiscard]] Real exp_gm(Dim m) const {
+    return std::exp(-(Real(m) * nu_ei + std::pow(m, 2 * hyper_morder) * hyper.nu_ei) * dt);
+  }
+
+  [[nodiscard]] Real exp_eta(Dim kx, Dim ky) const {
+    return std::exp(
+        -(res * g.kPerp2(kx, ky) + hyper.eta2 * std::pow(g.kPerp2(kx, ky), hyper_order)) * dt /
+        (1.0 + g.kPerp2(kx, ky) * de * de));
   }
 
   /// getTimestep calculates flows and magnetic fields to determine a dt.
