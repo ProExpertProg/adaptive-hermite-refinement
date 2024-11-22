@@ -1,3 +1,4 @@
+#include "CachedExponentials.hpp"
 #include "Exponentials.hpp"
 
 #include "benchmark-util.hpp"
@@ -5,7 +6,7 @@
 
 using namespace ahr;
 using namespace ahr::exp;
-template <typename Exp> static void BM_ExpKXKY(benchmark::State &state) {
+template <space_like Exp> static void BM_ExpKXKY(benchmark::State &state) {
   Dim const X = state.range(0);
   Dim const Y = state.range(1);
 
@@ -21,7 +22,7 @@ template <typename Exp> static void BM_ExpKXKY(benchmark::State &state) {
   }
 }
 
-template <typename Exp> static void BM_ExpM(benchmark::State &state) {
+template <moment_like Exp> static void BM_ExpM(benchmark::State &state) {
   Dim const M = state.range(0);
   Dim const X = state.range(1);
   Dim const Y = state.range(2);
@@ -50,5 +51,18 @@ BENCHMARK_WMIN(BM_ExpKXKY<NuG>)
     ->ArgsProduct({{2048, 4096, 8192}, {2048, 4096, 8192}})
     ->Unit(benchmark::kMillisecond);
 BENCHMARK_WMIN(BM_ExpM<GM>)
+    ->ArgsProduct({{2, 4, 10}, {2048, 4096}, {2048, 4096}})
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK_WMIN(BM_ExpKXKY<CachedKXKY<Eta>>)
+    ->ArgsProduct({{2048, 4096, 8192}, {2048, 4096, 8192}})
+    ->Unit(benchmark::kMillisecond);
+BENCHMARK_WMIN(BM_ExpKXKY<CachedKXKY<Nu>>)
+    ->ArgsProduct({{2048, 4096, 8192}, {2048, 4096, 8192}})
+    ->Unit(benchmark::kMillisecond);
+BENCHMARK_WMIN(BM_ExpKXKY<CachedKXKY<NuG>>)
+    ->ArgsProduct({{2048, 4096, 8192}, {2048, 4096, 8192}})
+    ->Unit(benchmark::kMillisecond);
+BENCHMARK_WMIN(BM_ExpM<CachedM<GM>>)
     ->ArgsProduct({{2, 4, 10}, {2048, 4096}, {2048, 4096}})
     ->Unit(benchmark::kMillisecond);

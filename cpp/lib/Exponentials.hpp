@@ -20,7 +20,7 @@ protected:
   Real dt{-1};
 };
 
-class Eta : Base {
+class Eta : protected Base {
 public:
   using Base::Base;
   using Base::update;
@@ -32,7 +32,7 @@ public:
   }
 };
 
-class Nu : Base {
+class Nu : protected Base {
 public:
   using Base::Base;
   using Base::update;
@@ -43,7 +43,7 @@ public:
   }
 };
 
-class NuG : Base {
+class NuG : protected Base {
 public:
   using Base::Base;
   using Base::update;
@@ -54,7 +54,7 @@ public:
   }
 };
 
-class GM : Base {
+class GM : protected Base {
 public:
   using Base::Base;
   using Base::update;
