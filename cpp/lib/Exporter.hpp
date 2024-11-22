@@ -46,6 +46,5 @@ public:
 
   /// Import a real buffer from file, and return it as a real buffer.
   [[nodiscard]] Grid::Buf::R_XY importRealBuf(fs::path const &filename);
-
 };
 } // namespace ahr
