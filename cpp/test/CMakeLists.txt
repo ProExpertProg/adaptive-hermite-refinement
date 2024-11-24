@@ -19,6 +19,7 @@ function(add_viriato_test FILE)
 endfunction()
 
 add_viriato_test(exporter.cpp)
+add_viriato_test(exps.cpp)
 add_viriato_test(filter.cpp)
 add_viriato_test(grid.cpp)
 add_viriato_test(transformer.cpp)
