@@ -5,18 +5,18 @@
 namespace ahr {
 
 class Transformer;
-class HouLiFilter;
+class HouLiFilterCached1DVector;
 
 class Brackets {
 public:
-  Brackets(Grid const &grid, Transformer const &tf, HouLiFilter const &hlFilter)
+  Brackets(Grid const &grid, Transformer const &tf, HouLiFilterCached1DVector const &hlFilter)
       : grid(grid), tf(tf), hlFilter(hlFilter) {}
 
 private:
   Grid const &grid;
   Transformer const &tf;
-  HouLiFilter const &hlFilter; // TODO vectorized
-  PrepareDerivatives prepareDXY{grid};
+  HouLiFilterCached1DVector const &hlFilter; // TODO vectorized
+  PrepareDerivativesVector prepareDXY{grid};
 
   using View = Grid::View;
   using Buf = Grid::Buf;
