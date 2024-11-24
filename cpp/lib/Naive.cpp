@@ -84,19 +84,22 @@ void Naive::run(Dim N, Dim saveInterval) {
     }
 
     hyper = HyperCoefficients::calculate(dt, g);
-    exp_nu.update(hyper, dt);
-    exp_nu_g.update(hyper, dt);
-    exp_eta.update(hyper, dt);
-    exp_gm.update(hyper, dt);
+    cilk_scope {
+      cilk_spawn exp_nu.update(hyper, dt);
+      cilk_spawn exp_nu_g.update(hyper, dt);
+      cilk_spawn exp_eta.update(hyper, dt);
+      exp_gm.update(hyper, dt);
+    }
 
     spdlog::debug("dt: {}", dt);
 
     // store results of nonlinear operators, as well as results of predictor step
     auto GM_K_Star = g.cBufMXY(), GM_Nonlinear_K = g.cBufMXY();
 
+    // spawn a bunch of stuff here
     // Compute N
-    auto bracketPhiNE_K = br.halfBracket(dPhi, Grid::sliceXY(dGM, N_E));
-    auto bracketAParUEKPar_K = br.halfBracket(Grid::sliceXY(dGM, A_PAR), dUEKPar);
+    auto bracketPhiNE_K = cilk_spawn br.halfBracket(dPhi, Grid::sliceXY(dGM, N_E));
+    auto bracketAParUEKPar_K = cilk_spawn br.halfBracket(Grid::sliceXY(dGM, A_PAR), dUEKPar);
 
     // Compute A
     auto dPhiNeG2 = g.dBufXY();
@@ -114,8 +117,11 @@ void Naive::run(Dim N, Dim saveInterval) {
       });
     }
 
-    auto bracketAParPhiG2Ne_K = br.halfBracket(Grid::sliceXY(dGM, A_PAR), dPhiNeG2);
+    // TODO this one could be before the loop if the halfBracket wasn't destructive
+    //  - for some reason this only shows up on MultiRun tests
+    auto bracketAParPhiG2Ne_K = cilk_spawn br.halfBracket(Grid::sliceXY(dGM, A_PAR), dPhiNeG2);
     auto bracketUEParPhi_K = br.halfBracket(dUEKPar, dPhi);
+    cilk_sync;
 
     g.for_each_kxky([&](Dim kx, Dim ky) {
       GM_Nonlinear_K(kx, ky, N_E) =
@@ -132,12 +138,12 @@ void Naive::run(Dim N, Dim saveInterval) {
 
     if (g.M > 2) {
       // Compute G2
-      auto bracketPhiG2_K = br.halfBracket(dPhi, Grid::sliceXY(dGM, G_MIN));
+      auto bracketPhiG2_K = cilk_spawn br.halfBracket(dPhi, Grid::sliceXY(dGM, G_MIN));
       auto bracketAParG3_K =
-          br.halfBracket(Grid::sliceXY(dGM, A_PAR), Grid::sliceXY(dGM, G_MIN + 1));
+          cilk_spawn br.halfBracket(Grid::sliceXY(dGM, A_PAR), Grid::sliceXY(dGM, G_MIN + 1));
 
       // Compute G_{M-1}
-      auto bracketPhiGLast_K = br.halfBracket(dPhi, Grid::sliceXY(dGM, LAST));
+      auto bracketPhiGLast_K = cilk_spawn br.halfBracket(dPhi, Grid::sliceXY(dGM, LAST));
       auto bracketAParGLast_K = br.halfBracket(Grid::sliceXY(dGM, A_PAR), Grid::sliceXY(dGM, LAST));
       g.for_each_kxky([&](Dim kx, Dim ky) {
         bracketAParGLast_K(kx, ky) *= nonlinear::GLastBracketFactor(g.M, g.kPerp2(kx, ky), hyper);
@@ -148,6 +154,7 @@ void Naive::run(Dim N, Dim saveInterval) {
       auto dBrLast = g.dBufXY();
       br.derivatives(bracketAParGLast_K, dBrLast);
       auto bracketTotalGLast_K = br.halfBracket(Grid::sliceXY(dGM, A_PAR), dBrLast);
+      cilk_sync;
 
       g.for_each_kxky([&](Dim kx, Dim ky) {
         GM_Nonlinear_K(kx, ky, G_MIN) = nonlinear::G2(
@@ -162,8 +169,8 @@ void Naive::run(Dim N, Dim saveInterval) {
             dt / 2.0 * (1 + exp_gm(LAST) * exp_nu_g(kx, ky)) * GM_Nonlinear_K(kx, ky, LAST);
       });
 
-      auto dGMinusPlus = g.dBufXY();
-      for (Dim m = G_MIN + 1; m < LAST; ++m) {
+      cilk_for (Dim m = G_MIN + 1; m < LAST; ++m) {
+        auto dGMinusPlus = g.dBufXY();
         g.for_each_xy([&](Dim x, Dim y) {
           dGMinusPlus.DX(x, y) =
               std::sqrt(m) * dGM.DX(x, y, m - 1) + std::sqrt(m + 1) * dGM.DX(x, y, m + 1);
@@ -171,8 +178,10 @@ void Naive::run(Dim N, Dim saveInterval) {
               std::sqrt(m) * dGM.DY(x, y, m - 1) + std::sqrt(m + 1) * dGM.DY(x, y, m + 1);
         });
 
-        auto bracketAParGMMinusPlus_K = br.halfBracket(Grid::sliceXY(dGM, A_PAR), dGMinusPlus);
+        auto bracketAParGMMinusPlus_K =
+            cilk_spawn br.halfBracket(Grid::sliceXY(dGM, A_PAR), dGMinusPlus);
         auto bracketPhiGM_K = br.halfBracket(dPhi, Grid::sliceXY(dGM, m));
+        cilk_sync;
 
         g.for_each_kxky([&](Dim kx, Dim ky) {
           GM_Nonlinear_K(kx, ky, m) =
@@ -196,13 +205,14 @@ void Naive::run(Dim N, Dim saveInterval) {
 
     auto dPhi_Loop = g.dBufXY(), dUEKPar_Loop = g.dBufXY();
     auto dGM_Loop = g.dBufMXY();
-    br.derivatives(phi_K_New, dPhi_Loop);
-    br.derivatives(ueKPar_K_New, dUEKPar_Loop);
+    cilk_spawn br.derivatives(phi_K_New, dPhi_Loop);
+    cilk_spawn br.derivatives(ueKPar_K_New, dUEKPar_Loop);
 
-    for (int m = 0; m < g.M; ++m) {
+    cilk_for (int m = 0; m < g.M; ++m) {
       // TODO(OPT) not necessary if we bail (only up to G_MIN)
       br.derivatives(Grid::sliceXY(GM_K_Star, m), Grid::sliceXY(dGM_Loop, m));
     }
+    cilk_sync;
 
     // Corrector loop
     // TODO confirm that only m derivatives are needed at a time
@@ -239,8 +249,9 @@ void Naive::run(Dim N, Dim saveInterval) {
       });
 
       auto bracketAParPhiG2Ne_K_Loop =
-          br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), dPhiNeG2_Loop);
+          cilk_spawn br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), dPhiNeG2_Loop);
       auto bracketUEParPhi_K_Loop = br.halfBracket(dUEKPar_Loop, dPhi_Loop);
+      cilk_sync;
 
       /// f_pred from Viriato
       auto GM_Nonlinear_K_Loop = g.cBufMXY();
@@ -272,11 +283,14 @@ void Naive::run(Dim N, Dim saveInterval) {
       spdlog::debug("sumAParRelError: {}, relative_error: {}", sumAParRelError, relative_error);
       // TODO(OPT) bail if relative error is large
 
-      DerivateNewMoment(A_PAR);
-      br.derivatives(ueKPar_K_New, dUEKPar_Loop);
+      auto bracketPhiNE_K_Loop = cilk_spawn br.halfBracket(dPhi_Loop, Grid::sliceXY(dGM_Loop, N_E));
 
-      auto bracketPhiNE_K_Loop = br.halfBracket(dPhi_Loop, Grid::sliceXY(dGM_Loop, N_E));
+      cilk_scope {
+        cilk_spawn DerivateNewMoment(A_PAR);
+        br.derivatives(ueKPar_K_New, dUEKPar_Loop);
+      }
       auto bracketAParUEKPar_K_Loop = br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), dUEKPar_Loop);
+      cilk_sync;
 
       g.for_each_kxky([&](Dim kx, Dim ky) {
         GM_Nonlinear_K_Loop(kx, ky, N_E) =
@@ -290,13 +304,17 @@ void Naive::run(Dim N, Dim saveInterval) {
             (kx | ky) == 0 ? 0 : nonlinear::phi(momentsNew_K(kx, ky, N_E), g.kPerp2(kx, ky));
       });
 
-      br.derivatives(phi_K_New, dPhi_Loop);
+      cilk_spawn br.derivatives(phi_K_New, dPhi_Loop);
       DerivateNewMoment(N_E);
+      cilk_sync;
+
       if (g.M > 2) {
         // Compute G2
-        auto bracketPhiG2_K_Loop = br.halfBracket(dPhi_Loop, Grid::sliceXY(dGM_Loop, G_MIN));
+        auto bracketPhiG2_K_Loop =
+            cilk_spawn br.halfBracket(dPhi_Loop, Grid::sliceXY(dGM_Loop, G_MIN));
         auto bracketAParG3_K_Loop =
             br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), Grid::sliceXY(dGM_Loop, G_MIN + 1));
+        cilk_sync;
 
         g.for_each_kxky([&](Dim kx, Dim ky) {
           GM_Nonlinear_K_Loop(kx, ky, G_MIN) =
@@ -319,8 +337,9 @@ void Naive::run(Dim N, Dim saveInterval) {
           });
 
           auto bracketAParGMMinusPlus_K_Loop =
-              br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), dGMinusPlus_Loop);
+              cilk_spawn br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), dGMinusPlus_Loop);
           auto bracketPhiGM_K_Loop = br.halfBracket(dPhi_Loop, Grid::sliceXY(dGM_Loop, m));
+          cilk_sync;
 
           g.for_each_kxky([&](Dim kx, Dim ky) {
             GM_Nonlinear_K_Loop(kx, ky, m) = nonlinear::GM(m, bracketPhiGM_K_Loop(kx, ky),
@@ -336,7 +355,8 @@ void Naive::run(Dim N, Dim saveInterval) {
         }
 
         // Compute G_{M-1}
-        auto bracketPhiGLast_K_Loop = br.halfBracket(dPhi_Loop, Grid::sliceXY(dGM_Loop, LAST));
+        auto bracketPhiGLast_K_Loop =
+            cilk_spawn br.halfBracket(dPhi_Loop, Grid::sliceXY(dGM_Loop, LAST));
         auto bracketAParGLast_K_Loop =
             br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), Grid::sliceXY(dGM_Loop, LAST));
         g.for_each_kxky([&](Dim kx, Dim ky) {
@@ -351,6 +371,7 @@ void Naive::run(Dim N, Dim saveInterval) {
         br.derivatives(bracketAParGLast_K_Loop, dBrLast_Loop);
         auto bracketTotalGLast_K_Loop =
             br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), dBrLast_Loop);
+        cilk_sync;
 
         g.for_each_kxky([&](Dim kx, Dim ky) {
           GM_Nonlinear_K_Loop(kx, ky, LAST) =

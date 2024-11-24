@@ -17,7 +17,7 @@ void PrepareDerivativesVector::operator()(View::C_XY const &in, DxDy<View::C_XY>
   VReal const kx_v_init{[](int idx, int) { return Real(idx / 2); }};
   VReal const norm_v{XYNorm};
 
-  for (Dim ky = 0; ky < grid.KY; ky += KY_TILE) {
+  cilk_for (Dim ky = 0; ky < grid.KY; ky += KY_TILE) {
     // broadcast ky values
     using TileReal = std::array<VReal, KY_TILE>;
     TileReal ky_v;

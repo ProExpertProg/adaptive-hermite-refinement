@@ -8,6 +8,7 @@ AllowShortLoopsOnASingleLine: false
 BreakBeforeBraces: Attach
 InsertBraces: true
 ColumnLimit: 100
+ForEachMacros: [ cilk_for ]
 
 IncludeCategories:
   - Regex: '^<'

@@ -14,8 +14,10 @@ void Brackets::bracket(DxDy<View::R_XY> const &op1, DxDy<View::R_XY> const &op2,
 void Brackets::derivatives(View::C_XY const &op, DxDy<View::R_XY> output) const {
   DxDy<Buf::C_XY> Der_K{grid.KX, grid.KY};
   prepareDXY(op, Der_K);
-  tf.bfft(Der_K.DX, output.DX);
-  tf.bfft(Der_K.DY, output.DY);
+  cilk_scope {
+    cilk_spawn tf.bfft(Der_K.DX, output.DX);
+    tf.bfft(Der_K.DY, output.DY);
+  }
 }
 
 Brackets::Buf::C_XY Brackets::halfBracket(DxDy<View::R_XY> derOp1, DxDy<View::R_XY> derOp2) const {
@@ -30,8 +32,10 @@ Brackets::Buf::C_XY Brackets::halfBracket(DxDy<View::R_XY> derOp1, DxDy<View::R_
 
 [[nodiscard]] Brackets::Buf::C_XY Brackets::fullBracket(View::C_XY op1, View::C_XY op2) const {
   auto derOp1 = grid.dBufXY(), derOp2 = grid.dBufXY();
-  derivatives(op1, derOp1);
-  derivatives(op2, derOp2);
+  cilk_scope {
+    cilk_spawn derivatives(op1, derOp1);
+    derivatives(op2, derOp2);
+  }
 
   return halfBracket(derOp1, derOp2);
 }

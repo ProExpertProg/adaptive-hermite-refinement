@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cilk.hpp"
 #include "constants.hpp"
 #include "typedefs.hpp"
 
@@ -103,7 +104,7 @@ public:
 
   /// Iterate in real space
   void for_each_xy(std::invocable<Dim, Dim> auto fun) const {
-    for (Dim y = 0; y < Y; ++y) {
+    cilk_for (Dim y = 0; y < Y; ++y) {
       for (Dim x = 0; x < X; ++x) {
         fun(x, y);
       }
@@ -112,7 +113,7 @@ public:
 
   /// Iterate in phase space
   void for_each_kxky(std::invocable<Dim, Dim> auto fun) const {
-    for (Dim ky = 0; ky < KY; ++ky) {
+    cilk_for (Dim ky = 0; ky < KY; ++ky) {
       for (Dim kx = 0; kx < KX; ++kx) {
         fun(kx, ky);
       }

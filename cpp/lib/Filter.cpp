@@ -68,7 +68,7 @@ void HouLiFilterCached1DVector::operator()(Grid::View::C_XY view) const {
 
   static_assert(view.stride(0) == 1); // contiguous in kx
 
-  for (int ky = 0; ky < grid.KY; ky += KY_TILE) {
+  cilk_for (int ky = 0; ky < grid.KY; ky += KY_TILE) {
     // avoid std::vector dereference inside loop:
     // broadcast fy value into vector
     std::array<VReal, KY_TILE> vfy;
