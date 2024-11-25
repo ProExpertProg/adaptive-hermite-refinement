@@ -19,7 +19,7 @@ protected:
   void check()
     requires exp::space_like<Exp>
   {
-    grid.for_each_kxky([&](Dim kx, Dim ky) {
+    FOREACH_KXKY(grid, {
       EXPECT_THAT(exp(kx, ky), AllClose(exp_t(kx, ky), 1e-16, 1e-15)); // prevent oneline
     });
   }

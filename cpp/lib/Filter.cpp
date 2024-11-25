@@ -9,7 +9,7 @@
 
 namespace ahr {
 void HouLiFilter::operator()(Grid::View::C_XY view) const {
-  grid.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY (grid, {
     view(kx, ky) *= std::exp(-36.0 * std::pow(grid.kx_(kx) / grid.KX, 36.0)) *
                     std::exp(-36.0 * std::pow(grid.ky_(ky) / grid.KY, 36.0));
   });
@@ -17,14 +17,15 @@ void HouLiFilter::operator()(Grid::View::C_XY view) const {
 
 HouLiFilterCached::HouLiFilterCached(Grid const &grid)
     : HouLiFilter(grid), factors(std::array{grid.KX, grid.KY}) {
-  grid.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY (grid, {
     factors(kx, ky) = std::exp(-36.0 * std::pow(grid.kx_(kx) / grid.KX, 36.0)) *
                       std::exp(-36.0 * std::pow(grid.ky_(ky) / grid.KY, 36.0));
   });
 }
 
 void HouLiFilterCached::operator()(Grid::View::C_XY view) const {
-  grid.for_each_kxky([&](Dim kx, Dim ky) { view(kx, ky) *= factors(kx, ky); });
+  FOREACH_KXKY (grid, { view(kx, ky) *= factors(kx, ky); })
+    ;
 }
 
 HouLiFilterCached1D::HouLiFilterCached1D(Grid const &grid)
@@ -38,7 +39,7 @@ HouLiFilterCached1D::HouLiFilterCached1D(Grid const &grid)
 }
 
 void HouLiFilterCached1D::operator()(Grid::View::C_XY view) const {
-  grid.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY (grid, {
     // Extra multiplication at runtime for lower memory cost
     view(kx, ky) *= factors_x[kx] * factors_y[ky];
   });

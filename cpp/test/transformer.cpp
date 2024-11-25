@@ -20,7 +20,7 @@ TEST(Transformer, Forward) {
   tf.fft(r, c);
 
   // Check the output (constant)
-  grid.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY(grid, {
     EXPECT_NEAR(c(kx, ky).real(), 1.0, 1e-6);
     EXPECT_NEAR(c(kx, ky).imag(), 0.0, 1e-6);
   });
@@ -35,7 +35,7 @@ TEST(Transformer, Backward) {
   auto c = grid.cBufXY();
 
   // Initialize the input with a constant
-  grid.for_each_kxky([&](Dim kx, Dim ky) { c(kx, ky) = 1.0; });
+  FOREACH_KXKY(grid, { c(kx, ky) = 1.0; });
 
   tf.bfft(c, r);
 

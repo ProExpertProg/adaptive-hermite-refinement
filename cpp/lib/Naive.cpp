@@ -41,11 +41,12 @@ void Naive::init(std::string_view equilibriumName) {
 
   // Transform moments into phase space
   for (int m = G_MIN; m < g.M; ++m) {
-    g.for_each_kxky([&](Dim kx, Dim ky) { moments_K(kx, ky, m) = 0; });
+    FOREACH_KXKY (g, { moments_K(kx, ky, m) = 0; })
+      ;
   }
 
   // aPar, uekPar, ne
-  g.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY (g, {
     moments_K(kx, ky, N_E) = nonlinear::phiInv(phi_K(kx, ky), g.kPerp2(kx, ky));
     moments_K(kx, ky, A_PAR) = aParEq_K(kx, ky);
     ueKPar_K(kx, ky) = -g.kPerp2(kx, ky) * moments_K(kx, ky, A_PAR);
@@ -124,7 +125,7 @@ void Naive::run(Dim N, Dim saveInterval) {
     auto bracketUEParPhi_K = br.halfBracket(dUEKPar, dPhi);
     cilk_sync;
 
-    g.for_each_kxky([&](Dim kx, Dim ky) {
+    FOREACH_KXKY (g, {
       GM_Nonlinear_K(kx, ky, N_E) =
           nonlinear::N(bracketPhiNE_K(kx, ky), bracketAParUEKPar_K(kx, ky));
       GM_K_Star(kx, ky, N_E) = exp_nu(kx, ky) * moments_K(kx, ky, N_E) +
@@ -146,7 +147,7 @@ void Naive::run(Dim N, Dim saveInterval) {
       // Compute G_{M-1}
       auto bracketPhiGLast_K = cilk_spawn br.halfBracket(dPhi, Grid::sliceXY(dGM, LAST));
       auto bracketAParGLast_K = br.halfBracket(Grid::sliceXY(dGM, A_PAR), Grid::sliceXY(dGM, LAST));
-      g.for_each_kxky([&](Dim kx, Dim ky) {
+      FOREACH_KXKY (g, {
         bracketAParGLast_K(kx, ky) *= nonlinear::GLastBracketFactor(g.M, g.kPerp2(kx, ky), hyper);
         bracketAParGLast_K(kx, ky) += rhoS / de * std::sqrt(LAST) * moments_K(kx, ky, LAST - 1);
         // TODO Viriato adds this after the derivative
@@ -157,7 +158,7 @@ void Naive::run(Dim N, Dim saveInterval) {
       auto bracketTotalGLast_K = br.halfBracket(Grid::sliceXY(dGM, A_PAR), dBrLast);
       cilk_sync;
 
-      g.for_each_kxky([&](Dim kx, Dim ky) {
+      FOREACH_KXKY (g, {
         GM_Nonlinear_K(kx, ky, G_MIN) = nonlinear::G2(
             bracketPhiG2_K(kx, ky), bracketAParG3_K(kx, ky), bracketAParUEKPar_K(kx, ky));
         GM_K_Star(kx, ky, G_MIN) = exp_nu(kx, ky) * moments_K(kx, ky, G_MIN) +
@@ -184,7 +185,7 @@ void Naive::run(Dim N, Dim saveInterval) {
         auto bracketPhiGM_K = br.halfBracket(dPhi, Grid::sliceXY(dGM, m));
         cilk_sync;
 
-        g.for_each_kxky([&](Dim kx, Dim ky) {
+        FOREACH_KXKY (g, {
           GM_Nonlinear_K(kx, ky, m) =
               nonlinear::GM(m, bracketPhiGM_K(kx, ky), bracketAParGMMinusPlus_K(kx, ky));
           GM_K_Star(kx, ky, m) =
@@ -197,7 +198,7 @@ void Naive::run(Dim N, Dim saveInterval) {
     // corrector step
 
     // Phi, Nabla, and other prep for A bracket
-    g.for_each_kxky([&](Dim kx, Dim ky) {
+    FOREACH_KXKY (g, {
       // set to 0 for (kx, ky)=(0,0)
       phi_K_New(kx, ky) =
           ((kx | ky) == 0) ? 0 : nonlinear::phi(GM_K_Star(kx, ky, N_E), g.kPerp2(kx, ky));
@@ -220,7 +221,7 @@ void Naive::run(Dim N, Dim saveInterval) {
     //  (if not, can always store one in a temporary buffer)
 
     auto guessAPar_K = g.cBufXY(), semiImplicitOperator = g.cBufXY();
-    g.for_each_kxky([&](Dim kx, Dim ky) {
+    FOREACH_KXKY (g, {
       guessAPar_K(kx, ky) = moments_K(kx, ky, A_PAR);
       semiImplicitOperator(kx, ky) = nonlinear::semiImplicitOp(dt, bPerpMax, aa0, g.kPerp2(kx, ky));
     });
@@ -257,7 +258,7 @@ void Naive::run(Dim N, Dim saveInterval) {
       /// f_pred from Viriato
       auto GM_Nonlinear_K_Loop = g.cBufMXY();
       SumReducer<Real> sumAParRelError = 0;
-      g.for_each_kxky([&](Dim kx, Dim ky) {
+      FOREACH_KXKY (g, {
         GM_Nonlinear_K_Loop(kx, ky, A_PAR) = nonlinear::A(
             bracketAParPhiG2Ne_K_Loop(kx, ky), bracketUEParPhi_K_Loop(kx, ky), g.kPerp2(kx, ky));
         // TODO(OPT) reuse star
@@ -274,7 +275,7 @@ void Naive::run(Dim N, Dim saveInterval) {
 
       old_error = relative_error;
       relative_error = 0;
-      g.for_each_kxky([&](Dim kx, Dim ky) {
+      FOREACH_KXKY (g, {
         relative_error =
             std::max(relative_error, std::abs(semiImplicitOperator(kx, ky) / 4.0 *
                                               (momentsNew_K(kx, ky, A_PAR) - guessAPar_K(kx, ky))) /
@@ -293,7 +294,7 @@ void Naive::run(Dim N, Dim saveInterval) {
       auto bracketAParUEKPar_K_Loop = br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), dUEKPar_Loop);
       cilk_sync;
 
-      g.for_each_kxky([&](Dim kx, Dim ky) {
+      FOREACH_KXKY (g, {
         GM_Nonlinear_K_Loop(kx, ky, N_E) =
             nonlinear::N(bracketPhiNE_K_Loop(kx, ky), bracketAParUEKPar_K_Loop(kx, ky));
         // TODO(OPT) reuse star
@@ -317,7 +318,7 @@ void Naive::run(Dim N, Dim saveInterval) {
             br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), Grid::sliceXY(dGM_Loop, G_MIN + 1));
         cilk_sync;
 
-        g.for_each_kxky([&](Dim kx, Dim ky) {
+        FOREACH_KXKY (g, {
           GM_Nonlinear_K_Loop(kx, ky, G_MIN) =
               nonlinear::G2(bracketPhiG2_K_Loop(kx, ky), bracketAParG3_K_Loop(kx, ky),
                             bracketAParUEKPar_K_Loop(kx, ky));
@@ -342,7 +343,7 @@ void Naive::run(Dim N, Dim saveInterval) {
           auto bracketPhiGM_K_Loop = br.halfBracket(dPhi_Loop, Grid::sliceXY(dGM_Loop, m));
           cilk_sync;
 
-          g.for_each_kxky([&](Dim kx, Dim ky) {
+          FOREACH_KXKY (g, {
             GM_Nonlinear_K_Loop(kx, ky, m) = nonlinear::GM(m, bracketPhiGM_K_Loop(kx, ky),
                                                            bracketAParGMMinusPlus_K_Loop(kx, ky));
             // TODO(OPT) reuse star
@@ -360,7 +361,7 @@ void Naive::run(Dim N, Dim saveInterval) {
             cilk_spawn br.halfBracket(dPhi_Loop, Grid::sliceXY(dGM_Loop, LAST));
         auto bracketAParGLast_K_Loop =
             br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), Grid::sliceXY(dGM_Loop, LAST));
-        g.for_each_kxky([&](Dim kx, Dim ky) {
+        FOREACH_KXKY (g, {
           bracketAParGLast_K_Loop(kx, ky) *=
               nonlinear::GLastBracketFactor(g.M, g.kPerp2(kx, ky), hyper);
           bracketAParGLast_K_Loop(kx, ky) +=
@@ -374,7 +375,7 @@ void Naive::run(Dim N, Dim saveInterval) {
             br.halfBracket(Grid::sliceXY(dGM_Loop, A_PAR), dBrLast_Loop);
         cilk_sync;
 
-        g.for_each_kxky([&](Dim kx, Dim ky) {
+        FOREACH_KXKY (g, {
           GM_Nonlinear_K_Loop(kx, ky, LAST) =
               nonlinear::GLast(bracketPhiGLast_K_Loop(kx, ky), bracketTotalGLast_K_Loop(kx, ky));
           // TODO(OPT) reuse star
@@ -406,7 +407,8 @@ void Naive::run(Dim N, Dim saveInterval) {
         break;
       }
 
-      g.for_each_kxky([&](Dim kx, Dim ky) { guessAPar_K(kx, ky) = momentsNew_K(kx, ky, A_PAR); });
+      FOREACH_KXKY (g, { guessAPar_K(kx, ky) = momentsNew_K(kx, ky, A_PAR); })
+        ;
     }
 
     if (divergent) { continue; }
@@ -483,7 +485,7 @@ Real Naive::updateTimestep(Real dt, Real tempDt, bool noInc, Real relative_error
 Naive::Buf::R_XY Naive::getMoment(Dim m) const {
   // Make a copy first
   Buf::C_XY tmp = g.cBufXY();
-  g.for_each_kxky([&](Dim kx, Dim ky) { tmp(kx, ky) = moments_K(kx, ky, m); });
+  FOREACH_KXKY (g, { tmp(kx, ky) = moments_K(kx, ky, m); });
 
   Buf::R_XY out = g.rBufXY();
   tf.bfft(tmp, out);
@@ -549,7 +551,7 @@ Real Naive::getTimestep(DxDy<View::R_XY> dPhi, DxDy<View::R_XY> dNE, DxDy<View::
 
 Naive::Energies Naive::calculateEnergies() const {
   Energies e{};
-  g.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY (g, {
     Real const factor = kx == 0 ? 0.5 : 1.0;
     e.magnetic += factor * g.kPerp2(kx, ky) * std::norm(moments_K(kx, ky, A_PAR));
     if (rhoI < smallRhoI) {

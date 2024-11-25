@@ -24,7 +24,7 @@ TYPED_TEST(TestPrepareDerivatives, Prepare) {
   Grid::DxDy<Grid::Buf::C_XY> bufD_t{KX, KY};
 
   // initialize buffers
-  this->grid.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY(this->grid, {
     buf(kx, ky) = buf_t(kx, ky) =
         1024.0 * Complex{std::sin(2 * pi * kx / KX), std::cos(2 * pi * ky / KY)};
   });

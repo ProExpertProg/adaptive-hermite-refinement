@@ -38,7 +38,7 @@ TEST_F(TestExporter, RoundTripReal) {
 
 TEST_F(TestExporter, RoundTripComplex) {
   auto cBuf = grid.cBufXY(), cBuf2 = grid.cBufXY();
-  grid.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY(grid, {
     cBuf(kx, ky) = {Real(kx) + Real(ky * grid.KX), Real(kx) - Real(ky * grid.KX)};
   });
   tf.normalize(cBuf, cBuf2);

@@ -17,7 +17,8 @@ void Transformer::fft(Grid::View::R_XY in, Grid::View::C_XY out) const { fftFwd(
 void Transformer::bfft(Grid::View::C_XY in, Grid::View::R_XY out) const { fftBwd(in, out); }
 
 void Transformer::normalize(Grid::View::C_XY view, Grid::View::C_XY out) const {
-  grid.for_each_kxky([&](Dim kx, Dim ky) { out(kx, ky) = view(kx, ky) * XYNorm; });
+  FOREACH_KXKY (grid, { out(kx, ky) = view(kx, ky) * XYNorm; })
+    ;
 }
 
 void Transformer::normalize(Grid::View::R_XY view, Grid::View::R_XY out) const {

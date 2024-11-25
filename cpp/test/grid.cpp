@@ -61,7 +61,7 @@ TEST(Grid, ForEach) {
     }
   }
 
-  grid.for_each_kxky([&](Dim kx, Dim ky) { mockLoop.fun(kx, ky); });
+  FOREACH_KXKY(grid, { mockLoop.fun(kx, ky); });
   testing::Mock::VerifyAndClearExpectations(&mockLoop);
 
   for (Dim x = 0; x < grid.X; ++x) {

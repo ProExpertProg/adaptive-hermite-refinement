@@ -23,7 +23,7 @@ TYPED_TEST(TestFilter, Filter) {
   auto buf_t = this->grid.cBufXY();
 
   // initialize buffers
-  this->grid.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY (this->grid, {
     buf(kx, ky) = {std::sin(2 * pi * kx), std::cos(2 * pi * ky)};
     buf_t(kx, ky) = {std::sin(2 * pi * kx), std::cos(2 * pi * ky)};
   });

@@ -5,7 +5,7 @@
 namespace ahr {
 
 void PrepareDerivatives::operator()(View::C_XY const &in, DxDy<View::C_XY> out) const {
-  grid.for_each_kxky([&](Dim kx, Dim ky) {
+  FOREACH_KXKY (grid, {
     Complex in_norm = 1i * in(kx, ky) * XYNorm;
     out.DX(kx, ky) = kx_(kx) * in_norm;
     out.DY(kx, ky) = ky_(ky) * in_norm;

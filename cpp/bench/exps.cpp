@@ -20,7 +20,7 @@ template <space_like Exp> static void BM_ExpKXKY(benchmark::State &state) {
     dt *= 1.2;
     exp.update(hyper, dt);
     for (int m = 0; m < M; ++m) {
-      grid.for_each_kxky([&](Dim kx, Dim ky) { benchmark::DoNotOptimize(exp(kx, ky)); });
+      FOREACH_KXKY(grid, { benchmark::DoNotOptimize(exp(kx, ky)); });
     }
   }
 }
@@ -40,7 +40,7 @@ template <moment_like Exp> static void BM_ExpM(benchmark::State &state) {
     dt *= 1.2;
     exp.update(hyper, dt);
     for (Dim m = 0; m < M; ++m) {
-      grid.for_each_kxky([&](Dim kx, Dim ky) { benchmark::DoNotOptimize(exp(m)); });
+      FOREACH_KXKY(grid, { benchmark::DoNotOptimize(exp(m)); });
     }
   }
 }

@@ -30,7 +30,7 @@ struct CachedKXKY : Exp {
     this->dt = dt;
 
     Exp::update(hyper, dt);
-    this->grid.for_each_kxky([&](Dim kx, Dim ky) { factors(kx, ky) = Exp::operator()(kx, ky); });
+    FOREACH_KXKY(this->grid, { factors(kx, ky) = Exp::operator()(kx, ky); });
   }
 
   Real operator()(Dim kx, Dim ky) { return factors(kx, ky); }
