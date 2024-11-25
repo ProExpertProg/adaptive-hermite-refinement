@@ -40,6 +40,7 @@ FetchContent_Declare(
 option(EVE_BUILD_TEST "Build EVE tests" OFF)
 FetchContent_MakeAvailable(argparse mdspan cnpy spdlog eve)
 target_include_directories(cnpy PUBLIC ${CNPY_SOURCE_DIR})
+#target_include_directories(cnpy-static PUBLIC ${CNPY_SOURCE_DIR})
 
 # ==========================
 # Project code
@@ -55,10 +56,21 @@ if (ENABLE_AVX512)
 endif ()
 
 option(ENABLE_CILK "Enable Cilk parallelism" ON)
+option(ENABLE_CILKSAN "Enable Cilk Sanitizer" OFF)
+option(ENABLE_CILKSAN_WORKAROUND "Enable beta feature" OFF)
 if (ENABLE_CILK)
     add_compile_options("-fopencilk")
     add_link_options("-fopencilk")
     add_compile_definitions(CILK_ENABLED)
+    if (ENABLE_CILKSAN)
+        add_compile_options("-fsanitize=cilk")
+        add_link_options("-fsanitize=cilk")
+        add_compile_definitions(CILKSAN_ENABLED)
+        if (ENABLE_CILKSAN_WORKAROUND)
+            add_compile_options("-mllvm" "-cilksan-bc-path=/opt/OpenCilk-2.0.0/lib/clang/14.0.6/lib/x86_64-unknown-linux-gnu/libcilksan.bc")
+            add_link_options("-mllvm" "-cilksan-bc-path=/opt/OpenCilk-2.0.0/lib/clang/14.0.6/lib/x86_64-unknown-linux-gnu/libcilksan.bc")
+        endif ()
+    endif ()
 endif ()
 
 # TODO: cleanup (currently just to test formatting)

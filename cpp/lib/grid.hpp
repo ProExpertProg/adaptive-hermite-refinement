@@ -6,6 +6,20 @@
 
 #include <fftw-cpp/fftw-cpp.h>
 
+#define FOREACH_XY(grid, ...)                                                                      \
+  cilk_for (Dim y = 0; y < (grid).Y; ++y) {                                                        \
+    for (Dim x = 0; x < (grid).X; ++x) {                                                           \
+      __VA_ARGS__;                                                                                 \
+    }                                                                                              \
+  }
+
+#define FOREACH_KXKY(grid, ...)                                                                    \
+  cilk_for (Dim ky = 0; ky < (grid).KY; ++ky) {                                                    \
+    for (Dim kx = 0; kx < (grid).KX; ++kx) {                                                       \
+      __VA_ARGS__;                                                                                 \
+    }                                                                                              \
+  }
+
 namespace ahr {
 namespace stdex = std::experimental;
 
@@ -103,21 +117,11 @@ public:
   // TODO move iteration to a separate class
 
   /// Iterate in real space
-  void for_each_xy(std::invocable<Dim, Dim> auto fun) const {
-    cilk_for (Dim y = 0; y < Y; ++y) {
-      for (Dim x = 0; x < X; ++x) {
-        fun(x, y);
-      }
-    }
-  }
+  void for_each_xy(std::invocable<Dim, Dim> auto fun) const { FOREACH_XY((*this), fun(x, y)); }
 
   /// Iterate in phase space
   void for_each_kxky(std::invocable<Dim, Dim> auto fun) const {
-    cilk_for (Dim ky = 0; ky < KY; ++ky) {
-      for (Dim kx = 0; kx < KX; ++kx) {
-        fun(kx, ky);
-      }
-    }
+    FOREACH_KXKY((*this), fun(kx, ky));
   }
 
   [[nodiscard]] Real ky_(Dim ky) const {

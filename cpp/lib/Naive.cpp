@@ -1,5 +1,6 @@
 #include "Naive.hpp"
 #include "equillibrium.hpp"
+#include "reducer.hpp"
 
 #include <cnpy.h>
 #include <cstdlib>
@@ -255,7 +256,7 @@ void Naive::run(Dim N, Dim saveInterval) {
 
       /// f_pred from Viriato
       auto GM_Nonlinear_K_Loop = g.cBufMXY();
-      Real sumAParRelError = 0;
+      SumReducer<Real> sumAParRelError = 0;
       g.for_each_kxky([&](Dim kx, Dim ky) {
         GM_Nonlinear_K_Loop(kx, ky, A_PAR) = nonlinear::A(
             bracketAParPhiG2Ne_K_Loop(kx, ky), bracketUEParPhi_K_Loop(kx, ky), g.kPerp2(kx, ky));
@@ -493,8 +494,7 @@ Naive::Buf::R_XY Naive::getMoment(Dim m) const {
 Real Naive::getTimestep(DxDy<View::R_XY> dPhi, DxDy<View::R_XY> dNE, DxDy<View::R_XY> dAPar) {
   // compute flows
   DxDy<View::R_XY> ve, b;
-  Real vyMax{0}, vxMax{0}, bxMax{0}, byMax{0};
-  bPerpMax = 0;
+  MaxReducer<Real> vyMax{0}, vxMax{0}, bxMax{0}, byMax{0}, bPerpMaxRed{0};
 
   // Note that this is minus in Viriato, but we don't care because we're taking the absolute value
   // anyway.
@@ -504,16 +504,19 @@ Real Naive::getTimestep(DxDy<View::R_XY> dPhi, DxDy<View::R_XY> dNE, DxDy<View::
   b.DY = dAPar.DX;
 
   g.for_each_xy([&](Dim x, Dim y) {
-    bxMax = std::max(bxMax, std::abs(b.DX(x, y)));
-    byMax = std::max(byMax, std::abs(b.DY(x, y)));
-    bPerpMax = std::max(bPerpMax, std::sqrt(b.DX(x, y) * b.DX(x, y) + b.DY(x, y) * b.DY(x, y)));
-    vxMax = std::max(vxMax, std::abs(ve.DX(x, y)));
-    vyMax = std::max(vyMax, std::abs(ve.DY(x, y)));
+    bxMax = std::max<Real>(bxMax, std::abs(b.DX(x, y)));
+    byMax = std::max<Real>(byMax, std::abs(b.DY(x, y)));
+    bPerpMaxRed =
+        std::max<Real>(bPerpMaxRed, std::sqrt(b.DX(x, y) * b.DX(x, y) + b.DY(x, y) * b.DY(x, y)));
+    vxMax = std::max<Real>(vxMax, std::abs(ve.DX(x, y)));
+    vyMax = std::max<Real>(vyMax, std::abs(ve.DY(x, y)));
     if (rhoI >= smallRhoI) {
-      vxMax = std::max(vxMax, rhoS * rhoS * std::abs(dNE.DX(x, y)));
-      vyMax = std::max(vyMax, rhoS * rhoS * std::abs(dNE.DY(x, y)));
+      vxMax = std::max<Real>(vxMax, rhoS * rhoS * std::abs(dNE.DX(x, y)));
+      vyMax = std::max<Real>(vyMax, rhoS * rhoS * std::abs(dNE.DY(x, y)));
     }
   });
+
+  bPerpMax = bPerpMaxRed;
 
   Real kperpDum2 = std::pow(g.ky_(g.KY / 2), 2) + std::pow(Real(g.KX), 2);
   Real omegaKaw;
