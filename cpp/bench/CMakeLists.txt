@@ -19,8 +19,17 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(google-benchmark)
 
-add_executable(bench-naive naive.cpp main-no-log.cpp)
+add_executable(bench-naive naive.cpp main.cpp)
 target_link_libraries(bench-naive src-lib benchmark::benchmark)
+
+add_executable(bench-hl-filter hl-filter.cpp main.cpp)
+target_link_libraries(bench-hl-filter src-lib benchmark::benchmark)
+
+add_executable(bench-exps exps.cpp main.cpp)
+target_link_libraries(bench-exps src-lib benchmark::benchmark)
+
+add_executable(bench-prepare prepare-derivatives.cpp main.cpp)
+target_link_libraries(bench-prepare src-lib benchmark::benchmark)
 
 if (ENABLE_CILK)
     add_executable(bench-fftw-cilk fftw-cilk.cpp)

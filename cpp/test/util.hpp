@@ -2,6 +2,7 @@
 
 #include <fftw-cpp/fftw-cpp.h>
 #include <gmock/gmock.h>
+#include <iomanip>
 #include <tuple>
 
 // Function to slice the tuple
@@ -20,11 +21,19 @@ template <std::size_t Start, typename... Args> auto slice(const std::tuple<Args.
   return slice<Start, sizeof...(Args)>(t);
 }
 
+template <typename T> T absdiff_no_overflow(T a, T b) { return std::max(a, b) - std::min(a, b); }
+
+template <typename T> T absdiff_no_overflow(std::complex<T> a, std::complex<T> b) {
+  auto const real_diff = absdiff_no_overflow(a.real(), b.real());
+  auto const imag_diff = absdiff_no_overflow(a.imag(), b.imag());
+  return std::abs(std::complex<T>{real_diff, imag_diff});
+}
+
 using ::testing::PrintToString;
 MATCHER_P3(AllClose, val, rel_tol, abs_tol,
            PrintToString(val) + " ±" + PrintToString(abs_tol) + " (±" +
                PrintToString(double(rel_tol) * std::abs(val)) + ")") {
-  auto diff = std::max(arg, val) - std::min(arg, val);
+  auto diff = absdiff_no_overflow(val, arg);
   double tolerance_diff = double(diff) - double(abs_tol) - double(rel_tol) * std::abs(val);
   return tolerance_diff <= 0;
 }
@@ -69,7 +78,7 @@ template <class... Args> static constexpr bool is_mdspan_v<stdex::mdspan<Args...
 
 MATCHER_P3(MdspanElementsAllClose, vals, rel_tol, abs_tol,
            "Elements within " + PrintToString(abs_tol) + " (abs) and " + PrintToString(rel_tol) +
-               " (rel)") {
+               " (rel) of \n" + PrintToString(vals)) {
   static_assert(is_mdspan_v<std::decay_t<decltype(vals)>> &&
                     is_mdspan_v<std::decay_t<decltype(arg)>>,
                 "ElementsAllClose only works with mdspan");
@@ -113,3 +122,16 @@ MATCHER_P3(MdspanElementsAllClose, vals, rel_tol, abs_tol,
 template <class V, class R> auto MdspanElementsAllClose(V &&vals, R &&rel_tol) {
   return MdspanElementsAllClose(std::forward<V>(vals), std::forward<R>(rel_tol), 0.0);
 }
+
+namespace std::experimental {
+/// This function provides an overload to GoogleTest for printing an mdspan.
+/// It will always print at the highest precision (16 for double).
+/// It must be in the same namespace as mdspan.
+/// This overload is only instantiated if an ostream operator<< for mdspan exists.
+template <typename T, typename Extents, typename Layout, typename Accessor>
+  requires requires(mdspan<T, Extents, Layout, Accessor> const &m, std::ostream &o) { o << m; }
+void PrintTo(mdspan<T, Extents, Layout, Accessor> const &m, ::std::ostream *os) {
+  *os << std::setprecision(16) << m;
+}
+
+} // namespace std::experimental

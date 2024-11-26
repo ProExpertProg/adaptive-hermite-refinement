@@ -25,12 +25,6 @@ public:
    * @param N the number of timesteps.
    */
   virtual void run(Dim N, Dim saveInterval) = 0;
-
-  /**
-   *
-   * @return Final values of APar.
-   */
-  virtual mdarray<Real, dextents<Dim, 2u>> getFinalAPar() = 0;
 };
 
 } // namespace ahr

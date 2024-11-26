@@ -31,8 +31,16 @@ FetchContent_Declare(
         GIT_TAG e593f6695c6065e6b345fe2862f04a519ed484e0
 )
 
-FetchContent_MakeAvailable(argparse mdspan cnpy spdlog)
+FetchContent_Declare(
+        eve
+        GIT_REPOSITORY https://github.com/jfalcou/eve.git
+        GIT_TAG b2d8b637e71d132654c52480549e9b79944d1f74
+)
+
+option(EVE_BUILD_TEST "Build EVE tests" OFF)
+FetchContent_MakeAvailable(argparse mdspan cnpy spdlog eve)
 target_include_directories(cnpy PUBLIC ${CNPY_SOURCE_DIR})
+#target_include_directories(cnpy-static PUBLIC ${CNPY_SOURCE_DIR})
 
 # ==========================
 # Project code
@@ -44,13 +52,25 @@ target_link_libraries(fftw-cpp INTERFACE mdspan)
 option(ENABLE_AVX512 "Enable AVX512 instructions (e.g. might want to turn off for the sake of Valgrind)" OFF)
 if (ENABLE_AVX512)
     add_compile_options("-mavx512f" "-march=native")
+    add_compile_definitions(AVX512_ENABLED)
 endif ()
 
 option(ENABLE_CILK "Enable Cilk parallelism" ON)
+option(ENABLE_CILKSAN "Enable Cilk Sanitizer" OFF)
+option(ENABLE_CILKSAN_WORKAROUND "Enable beta feature" OFF)
 if (ENABLE_CILK)
     add_compile_options("-fopencilk")
     add_link_options("-fopencilk")
     add_compile_definitions(CILK_ENABLED)
+    if (ENABLE_CILKSAN)
+        add_compile_options("-fsanitize=cilk")
+        add_link_options("-fsanitize=cilk")
+        add_compile_definitions(CILKSAN_ENABLED)
+        if (ENABLE_CILKSAN_WORKAROUND)
+            add_compile_options("-mllvm" "-cilksan-bc-path=/opt/OpenCilk-2.0.0/lib/clang/14.0.6/lib/x86_64-unknown-linux-gnu/libcilksan.bc")
+            add_link_options("-mllvm" "-cilksan-bc-path=/opt/OpenCilk-2.0.0/lib/clang/14.0.6/lib/x86_64-unknown-linux-gnu/libcilksan.bc")
+        endif ()
+    endif ()
 endif ()
 
 # TODO: cleanup (currently just to test formatting)
@@ -58,9 +78,16 @@ add_executable(adaptive_hermite_refinement lib/test-triangle.cpp)
 target_include_directories(adaptive_hermite_refinement PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(adaptive_hermite_refinement argparse mdspan)
 
-add_library(src-lib OBJECT lib/Naive.cpp lib/Naive.hpp lib/HermiteRunner.cpp lib/HermiteRunner.hpp)
+add_library(src-lib OBJECT lib/Naive.cpp lib/Naive.hpp lib/HermiteRunner.cpp lib/HermiteRunner.hpp
+        lib/Transformer.hpp lib/Transformer.cpp
+        lib/Exporter.hpp lib/Exporter.cpp
+        lib/Filter.hpp lib/Filter.cpp
+        lib/PrepareDerivatives.hpp lib/PrepareDerivatives.cpp
+        lib/Brackets.hpp lib/Brackets.cpp
+)
 target_include_directories(src-lib PUBLIC lib/)
-target_link_libraries(src-lib mdspan fftw-cpp cnpy spdlog::spdlog)
+# TODO give eve only to vectorized targets
+target_link_libraries(src-lib mdspan fftw-cpp cnpy spdlog::spdlog eve::eve)
 
 add_subdirectory(bench)
 
