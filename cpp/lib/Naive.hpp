@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Brackets.hpp"
-#include "Exponentials.hpp"
+#include "CachedExponentials.hpp"
 #include "Exporter.hpp"
 #include "Filter.hpp"
 #include "HermiteRunner.hpp"
@@ -99,10 +99,10 @@ private:
   // =================
 
   /// \defgroup @{
-  exp::Nu exp_nu{g};
-  exp::NuG exp_nu_g{g};
-  exp::Eta exp_eta{g};
-  exp::GM exp_gm{g};
+  exp::CachedKXKY<exp::Nu> exp_nu{g};
+  exp::CachedKXKY<exp::NuG> exp_nu_g{g};
+  exp::CachedKXKY<exp::Eta> exp_eta{g};
+  exp::CachedM<exp::GM> exp_gm{g};
   /// @}
 
   /// getTimestep calculates flows and magnetic fields to determine a dt.
