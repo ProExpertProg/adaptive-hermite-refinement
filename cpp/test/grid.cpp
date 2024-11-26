@@ -70,7 +70,7 @@ TEST(Grid, ForEach) {
     }
   }
 
-  grid.for_each_xy([&](Dim x, Dim y) { mockLoop.fun(x, y); });
+  FOREACH_XY(grid, { mockLoop.fun(x, y); });
   testing::Mock::VerifyAndClearExpectations(&mockLoop);
 }
 

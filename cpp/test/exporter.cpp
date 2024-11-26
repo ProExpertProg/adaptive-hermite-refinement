@@ -19,7 +19,7 @@ protected:
 TEST_F(TestExporter, RoundTripReal) {
 
   auto rBuf = grid.rBufXY();
-  grid.for_each_xy([&](Dim x, Dim y) { rBuf(x, y) = Real(x + y * grid.X); });
+  FOREACH_XY(grid, { rBuf(x, y) = Real(x + y * grid.X); });
 
   exporter.exportTo("test.npy", rBuf);
 

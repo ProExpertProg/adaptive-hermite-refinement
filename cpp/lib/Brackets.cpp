@@ -6,9 +6,8 @@ namespace ahr {
 
 void Brackets::bracket(DxDy<View::R_XY> const &op1, DxDy<View::R_XY> const &op2,
                        View::R_XY const &output) const {
-  grid.for_each_xy([&](Dim x, Dim y) {
-    output(x, y) = op1.DX(x, y) * op2.DY(x, y) - op1.DY(x, y) * op2.DX(x, y);
-  });
+  FOREACH_XY (grid, { output(x, y) = op1.DX(x, y) * op2.DY(x, y) - op1.DY(x, y) * op2.DX(x, y); })
+    ;
 }
 
 void Brackets::derivatives(View::C_XY const &op, DxDy<View::R_XY> output) const {

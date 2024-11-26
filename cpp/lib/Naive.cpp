@@ -106,14 +106,14 @@ void Naive::run(Dim N, Dim saveInterval) {
     // Compute A
     auto dPhiNeG2 = g.dBufXY();
     if (g.M > 2) {
-      g.for_each_xy([&](Dim x, Dim y) {
+      FOREACH_XY (g, {
         dPhiNeG2.DX(x, y) =
             dPhi.DX(x, y) - rhoS * rhoS * (std::sqrt(2) * dGM.DX(x, y, G_MIN) + dGM.DX(x, y, N_E));
         dPhiNeG2.DY(x, y) =
             dPhi.DY(x, y) - rhoS * rhoS * (std::sqrt(2) * dGM.DY(x, y, G_MIN) + dGM.DY(x, y, N_E));
       });
     } else {
-      g.for_each_xy([&](Dim x, Dim y) {
+      FOREACH_XY (g, {
         dPhiNeG2.DX(x, y) = dPhi.DX(x, y) - rhoS * rhoS * dGM.DX(x, y, N_E);
         dPhiNeG2.DY(x, y) = dPhi.DY(x, y) - rhoS * rhoS * dGM.DY(x, y, N_E);
       });
@@ -173,7 +173,7 @@ void Naive::run(Dim N, Dim saveInterval) {
 
       cilk_for (Dim m = G_MIN + 1; m < LAST; ++m) {
         auto dGMinusPlus = g.dBufXY();
-        g.for_each_xy([&](Dim x, Dim y) {
+        FOREACH_XY (g, {
           dGMinusPlus.DX(x, y) =
               std::sqrt(m) * dGM.DX(x, y, m - 1) + std::sqrt(m + 1) * dGM.DX(x, y, m + 1);
           dGMinusPlus.DY(x, y) =
@@ -236,7 +236,7 @@ void Naive::run(Dim N, Dim saveInterval) {
 
       // First, compute A_par
       auto dPhiNeG2_Loop = g.dBufXY();
-      g.for_each_xy([&](Dim x, Dim y) {
+      FOREACH_XY (g, {
         if (g.M > 2) {
           dPhiNeG2_Loop.DX(x, y) =
               dPhi_Loop.DX(x, y) -
@@ -331,7 +331,7 @@ void Naive::run(Dim N, Dim saveInterval) {
 
         DxDy<Buf::R_XY> dGMinusPlus_Loop = g.dBufXY();
         for (int m = G_MIN + 1; m < LAST; ++m) {
-          g.for_each_xy([&](Dim x, Dim y) {
+          FOREACH_XY (g, {
             dGMinusPlus_Loop.DX(x, y) = std::sqrt(m) * dGM_Loop.DX(x, y, m - 1) +
                                         std::sqrt(m + 1) * dGM_Loop.DX(x, y, m + 1);
             dGMinusPlus_Loop.DY(x, y) = std::sqrt(m) * dGM_Loop.DY(x, y, m - 1) +
@@ -505,7 +505,7 @@ Real Naive::getTimestep(DxDy<View::R_XY> dPhi, DxDy<View::R_XY> dNE, DxDy<View::
   b.DX = dAPar.DY;
   b.DY = dAPar.DX;
 
-  g.for_each_xy([&](Dim x, Dim y) {
+  FOREACH_XY (g, {
     bxMax = std::max<Real>(bxMax, std::abs(b.DX(x, y)));
     byMax = std::max<Real>(byMax, std::abs(b.DY(x, y)));
     bPerpMaxRed =

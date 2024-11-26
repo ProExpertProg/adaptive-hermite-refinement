@@ -23,7 +23,8 @@ void Exporter::exportTo(fs::path const &filename, Grid::View::C_XY cView) {
 void Exporter::exportTo(fs::path const &filename, Grid::View::R_XY rView) {
   // Copy the data to a layout-right buffer
   stdex::mdarray<Real, stdex::dextents<size_t, 2u>> rArray{rView.extents()};
-  grid.for_each_xy([&](Dim x, Dim y) { rArray(x, y) = rView(x, y); });
+  FOREACH_XY (grid, { rArray(x, y) = rView(x, y); })
+    ;
 
   auto const path = filename.is_absolute() ? filename : prefix_dir / filename;
   cnpy::npy_save(path, rArray.data(), {grid.X, grid.Y}, "w");
@@ -41,7 +42,8 @@ void Exporter::importReal(const fs::path &filename, Grid::View::R_XY rView) {
   if (npy.view().extents() != rView.extents()) { throw std::runtime_error("Incompatible extents"); }
 
   // Copy the data
-  grid.for_each_xy([&](Dim x, Dim y) { rView(x, y) = npy.view()(x, y); });
+  FOREACH_XY (grid, { rView(x, y) = npy.view()(x, y); })
+    ;
 }
 
 Grid::Buf::R_XY Exporter::importRealBuf(const fs::path &filename) {

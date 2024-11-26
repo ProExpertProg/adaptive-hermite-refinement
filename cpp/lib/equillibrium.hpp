@@ -17,7 +17,7 @@ Real yy(Dim y, Dim Y) { return ly * (Real(y) - Real(Y) / 2.0) / Real(Y); }
 auto equilibriumGauss(Grid const &g) {
   auto aParEq = g.rBufXY(), phiEq = g.rBufXY();
 
-  g.for_each_xy([&](Dim x, Dim y) {
+  FOREACH_XY(g, {
     using std::numbers::pi;
     aParEq(x, y) = a0 * std::exp(-std::pow(yy(y, g.Y) * 2 * pi * 2 / ly, 2)) *
                    std::exp(-std::pow(xx(x, g.X) * 2 * pi * 2 / lx, 2));
@@ -30,7 +30,7 @@ auto equilibriumGauss(Grid const &g) {
 auto equilibriumOT01(Grid const &g) {
   auto aParEq = g.rBufXY(), phiEq = g.rBufXY();
 
-  g.for_each_xy([&](Dim x, Dim y) {
+  FOREACH_XY(g, {
     using std::numbers::pi;
     aParEq(x, y) = std::cos(4 * pi * xx(x, g.X) / lx) + 2 * std::cos(2 * pi * yy(y, g.Y) / ly);
     phiEq(x, y) = -2 * (std::cos(2 * pi * xx(x, g.X) / lx) + std::cos(2 * pi * yy(y, g.Y) / ly));

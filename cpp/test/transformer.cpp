@@ -14,7 +14,7 @@ TEST(Transformer, Forward) {
   auto c = grid.cBufXY();
 
   // Initialize the input grid with a delta function
-  grid.for_each_xy([&](Dim x, Dim y) { r(x, y) = (x == 0 && y == 0) ? 1.0 : 0.0; });
+  FOREACH_XY(grid, { r(x, y) = (x == 0 && y == 0) ? 1.0 : 0.0; });
 
   // Perform FFT
   tf.fft(r, c);
@@ -40,7 +40,7 @@ TEST(Transformer, Backward) {
   tf.bfft(c, r);
 
   // Check the output (delta function)
-  grid.for_each_xy([&](Dim x, Dim y) {
+  FOREACH_XY(grid, {
     if (x == 0 && y == 0) {
       EXPECT_NEAR(r(x, y), grid.X * grid.Y, 1e-6);
     } else {
@@ -57,7 +57,7 @@ TEST(Transformer, RoundTrip) {
   auto r = grid.rBufXY(), r2 = grid.rBufXY();
   auto c = grid.cBufXY(), c2 = grid.cBufXY();
 
-  grid.for_each_xy([&](Dim x, Dim y) {
+  FOREACH_XY(grid, {
     using namespace std;
     using namespace std::numbers;
     r(x, y) = cos(4 * pi * x / grid.X) + 2 * cos(2 * pi * y / grid.Y);

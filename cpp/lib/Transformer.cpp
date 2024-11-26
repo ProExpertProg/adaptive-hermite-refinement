@@ -22,7 +22,8 @@ void Transformer::normalize(Grid::View::C_XY view, Grid::View::C_XY out) const {
 }
 
 void Transformer::normalize(Grid::View::R_XY view, Grid::View::R_XY out) const {
-  grid.for_each_xy([&](Dim x, Dim y) { out(x, y) = view(x, y) * XYNorm; });
+  FOREACH_XY (grid, { out(x, y) = view(x, y) * XYNorm; })
+    ;
 }
 
 } // namespace ahr

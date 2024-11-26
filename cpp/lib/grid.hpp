@@ -7,18 +7,22 @@
 #include <fftw-cpp/fftw-cpp.h>
 
 #define FOREACH_XY(grid, ...)                                                                      \
-  cilk_for (Dim y = 0; y < (grid).Y; ++y) {                                                        \
-    for (Dim x = 0; x < (grid).X; ++x) {                                                           \
-      __VA_ARGS__;                                                                                 \
+  do {                                                                                             \
+    cilk_for (Dim y = 0; y < (grid).Y; ++y) {                                                      \
+      for (Dim x = 0; x < (grid).X; ++x) {                                                         \
+        __VA_ARGS__;                                                                               \
+      }                                                                                            \
     }                                                                                              \
-  }
+  } while (0)
 
 #define FOREACH_KXKY(grid, ...)                                                                    \
-  cilk_for (Dim ky = 0; ky < (grid).KY; ++ky) {                                                    \
-    for (Dim kx = 0; kx < (grid).KX; ++kx) {                                                       \
-      __VA_ARGS__;                                                                                 \
+  do {                                                                                             \
+    cilk_for (Dim ky = 0; ky < (grid).KY; ++ky) {                                                  \
+      for (Dim kx = 0; kx < (grid).KX; ++kx) {                                                     \
+        __VA_ARGS__;                                                                               \
+      }                                                                                            \
     }                                                                                              \
-  }
+  } while (0)
 
 namespace ahr {
 namespace stdex = std::experimental;
