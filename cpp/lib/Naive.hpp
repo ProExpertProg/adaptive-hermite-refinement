@@ -39,7 +39,7 @@ public:
   Grid g;
   Transformer tf{g};
   Exporter exporter{g, tf};
-  HouLiFilter hlFilter{g};
+  HouLiFilterCached1D hlFilter{g};
   Brackets br{g, tf, hlFilter};
 
 private:

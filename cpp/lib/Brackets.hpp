@@ -5,17 +5,17 @@
 namespace ahr {
 
 class Transformer;
-class HouLiFilter;
+class HouLiFilterCached1D;
 
 class Brackets {
 public:
-  Brackets(Grid const &grid, Transformer const &tf, HouLiFilter const &hlFilter)
+  Brackets(Grid const &grid, Transformer const &tf, HouLiFilterCached1D const &hlFilter)
       : grid(grid), tf(tf), hlFilter(hlFilter) {}
 
 private:
   Grid const &grid;
   Transformer const &tf;
-  HouLiFilter const &hlFilter; // TODO vectorized
+  HouLiFilterCached1D const &hlFilter; // TODO vectorized
   PrepareDerivatives prepareDXY{grid};
 
   using View = Grid::View;
