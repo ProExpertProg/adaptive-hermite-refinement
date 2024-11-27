@@ -205,6 +205,8 @@ void Naive::run(Dim N, Dim saveInterval) {
     }
 
     // Corrector loop
+    // While momentsNew_K values don't directly depend on GM_K_Star,
+    // they share a common subexpression so we use GM_K_Star to reduce recomputation.
     // TODO confirm that only m derivatives are needed at a time
     //  (if not, can always store one in a temporary buffer)
 
@@ -249,12 +251,11 @@ void Naive::run(Dim N, Dim saveInterval) {
         GM_Nonlinear_K_Loop(kx, ky, A_PAR) = nonlinear::A(
             bracketAParPhiG2Ne_K_Loop(kx, ky), bracketUEParPhi_K_Loop(kx, ky), g.kPerp2(kx, ky));
         // TODO(OPT) reuse star
-        momentsNew_K(kx, ky, A_PAR) = 1.0 / (1.0 + semiImplicitOperator(kx, ky) / 4.0) *
-                                      (exp_eta(kx, ky) * moments_K(kx, ky, A_PAR) +
-                                       dt / 2.0 * exp_eta(kx, ky) * GM_Nonlinear_K(kx, ky, A_PAR) +
-                                       dt / 2.0 * GM_Nonlinear_K_Loop(kx, ky, A_PAR) +
-                                       (1.0 - exp_eta(kx, ky)) * aParEq_K(kx, ky) +
-                                       semiImplicitOperator(kx, ky) / 4.0 * guessAPar_K(kx, ky));
+        momentsNew_K(kx, ky, A_PAR) =
+            1.0 / (1.0 + semiImplicitOperator(kx, ky) / 4.0) *
+            (GM_K_Star(kx, ky, A_PAR) +
+             dt / 2.0 * (GM_Nonlinear_K_Loop(kx, ky, A_PAR) - GM_Nonlinear_K(kx, ky, A_PAR)) +
+             semiImplicitOperator(kx, ky) / 4.0 * guessAPar_K(kx, ky));
         ueKPar_K_New(kx, ky) = -g.kPerp2(kx, ky) * momentsNew_K(kx, ky, A_PAR);
 
         sumAParRelError += std::norm(momentsNew_K(kx, ky, A_PAR) - moments_K(kx, ky, A_PAR));
@@ -281,10 +282,9 @@ void Naive::run(Dim N, Dim saveInterval) {
       g.for_each_kxky([&](Dim kx, Dim ky) {
         GM_Nonlinear_K_Loop(kx, ky, N_E) =
             nonlinear::N(bracketPhiNE_K_Loop(kx, ky), bracketAParUEKPar_K_Loop(kx, ky));
-        // TODO(OPT) reuse star
-        momentsNew_K(kx, ky, N_E) = exp_nu(kx, ky) * moments_K(kx, ky, N_E) +
-                                    dt / 2.0 * exp_nu(kx, ky) * GM_Nonlinear_K(kx, ky, N_E) +
-                                    dt / 2.0 * GM_Nonlinear_K_Loop(kx, ky, N_E);
+        momentsNew_K(kx, ky, N_E) =
+            GM_K_Star(kx, ky, N_E) +
+            dt / 2.0 * (GM_Nonlinear_K_Loop(kx, ky, N_E) - GM_Nonlinear_K(kx, ky, N_E));
 
         phi_K_New(kx, ky) =
             (kx | ky) == 0 ? 0 : nonlinear::phi(momentsNew_K(kx, ky, N_E), g.kPerp2(kx, ky));
@@ -302,10 +302,9 @@ void Naive::run(Dim N, Dim saveInterval) {
           GM_Nonlinear_K_Loop(kx, ky, G_MIN) =
               nonlinear::G2(bracketPhiG2_K_Loop(kx, ky), bracketAParG3_K_Loop(kx, ky),
                             bracketAParUEKPar_K_Loop(kx, ky));
-          // TODO(OPT) reuse star
-          momentsNew_K(kx, ky, G_MIN) = exp_nu(kx, ky) * moments_K(kx, ky, G_MIN) +
-                                        dt / 2.0 * exp_nu(kx, ky) * GM_Nonlinear_K(kx, ky, G_MIN) +
-                                        dt / 2.0 * GM_Nonlinear_K_Loop(kx, ky, G_MIN);
+          momentsNew_K(kx, ky, G_MIN) =
+              GM_K_Star(kx, ky, G_MIN) +
+              dt / 2.0 * (GM_Nonlinear_K_Loop(kx, ky, G_MIN) - GM_Nonlinear_K(kx, ky, G_MIN));
         });
         DerivateNewMoment(G_MIN);
 
@@ -325,11 +324,9 @@ void Naive::run(Dim N, Dim saveInterval) {
           g.for_each_kxky([&](Dim kx, Dim ky) {
             GM_Nonlinear_K_Loop(kx, ky, m) = nonlinear::GM(m, bracketPhiGM_K_Loop(kx, ky),
                                                            bracketAParGMMinusPlus_K_Loop(kx, ky));
-            // TODO(OPT) reuse star
             momentsNew_K(kx, ky, m) =
-                exp_gm(m) * exp_nu_g(kx, ky) * moments_K(kx, ky, m) +
-                dt / 2.0 * exp_gm(m) * exp_nu_g(kx, ky) * GM_Nonlinear_K(kx, ky, m) +
-                dt / 2.0 * GM_Nonlinear_K_Loop(kx, ky, m);
+                GM_K_Star(kx, ky, m) +
+                dt / 2.0 * (GM_Nonlinear_K_Loop(kx, ky, m) - GM_Nonlinear_K(kx, ky, m));
           });
 
           DerivateNewMoment(m);
@@ -357,9 +354,8 @@ void Naive::run(Dim N, Dim saveInterval) {
               nonlinear::GLast(bracketPhiGLast_K_Loop(kx, ky), bracketTotalGLast_K_Loop(kx, ky));
           // TODO(OPT) reuse star
           momentsNew_K(kx, ky, LAST) =
-              exp_gm(LAST) * exp_nu_g(kx, ky) * moments_K(kx, ky, LAST) +
-              dt / 2.0 * exp_gm(LAST) * exp_nu_g(kx, ky) * GM_Nonlinear_K(kx, ky, LAST) +
-              dt / 2.0 * GM_Nonlinear_K_Loop(kx, ky, LAST);
+              GM_K_Star(kx, ky, LAST) +
+              dt / 2.0 * (GM_Nonlinear_K_Loop(kx, ky, LAST) - GM_Nonlinear_K(kx, ky, LAST));
         });
         DerivateNewMoment(LAST);
       }
