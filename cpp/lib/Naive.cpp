@@ -171,18 +171,24 @@ void Naive::run(Dim N, Dim saveInterval) {
             dt / 2.0 * (1 + exp_gm(LAST) * exp_nu_g(kx, ky)) * GM_Nonlinear_K(kx, ky, LAST);
       });
 
+      // It would be great if this allocation worked inside cilk_for but it doesn't
+      auto dGMinusPlus = g.dBufMXY();
+      // These below seem to work inside cilk_for but no need to risk it
+      auto brAParGMMinusPlus_K = g.cBufMXY(), brPhiGM_K = g.cBufMXY();
       cilk_for (Dim m = G_MIN + 1; m < LAST; ++m) {
-        auto dGMinusPlus = g.dBufXY();
         FOREACH_XY (g, {
-          dGMinusPlus.DX(x, y) =
+          dGMinusPlus.DX(x, y, m) =
               std::sqrt(m) * dGM.DX(x, y, m - 1) + std::sqrt(m + 1) * dGM.DX(x, y, m + 1);
-          dGMinusPlus.DY(x, y) =
+          dGMinusPlus.DY(x, y, m) =
               std::sqrt(m) * dGM.DY(x, y, m - 1) + std::sqrt(m + 1) * dGM.DY(x, y, m + 1);
         });
 
-        auto bracketAParGMMinusPlus_K =
-            cilk_spawn br.halfBracket(Grid::sliceXY(dGM, A_PAR), dGMinusPlus);
-        auto bracketPhiGM_K = br.halfBracket(dPhi, Grid::sliceXY(dGM, m));
+        // TODO naming
+        auto bracketAParGMMinusPlus_K = Grid::sliceXY(brAParGMMinusPlus_K, m);
+        auto bracketPhiGM_K = Grid::sliceXY(brPhiGM_K, m);
+        cilk_spawn br.halfBracket(Grid::sliceXY(dGM, A_PAR), Grid::sliceXY(dGMinusPlus, m),
+                                  bracketAParGMMinusPlus_K);
+        br.halfBracket(dPhi, Grid::sliceXY(dGM, m), bracketPhiGM_K);
         cilk_sync;
 
         FOREACH_KXKY (g, {

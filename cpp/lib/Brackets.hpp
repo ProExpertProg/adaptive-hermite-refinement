@@ -28,6 +28,7 @@ public:
 
   /// Compute the bracket of two complex fields using their derivatives
   [[nodiscard]] Buf::C_XY halfBracket(DxDy<View::R_XY> op1, DxDy<View::R_XY> op2) const;
+  void halfBracket(DxDy<View::R_XY> op1, DxDy<View::R_XY> op2, View::C_XY output) const;
 
   /// Compute the bracket of two complex fields using their values
   [[nodiscard]] Buf::C_XY fullBracket(View::C_XY op1, View::C_XY op2) const;

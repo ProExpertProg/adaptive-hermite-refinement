@@ -20,13 +20,17 @@ void Brackets::derivatives(View::C_XY const &op, DxDy<View::R_XY> output) const 
 }
 
 Brackets::Buf::C_XY Brackets::halfBracket(DxDy<View::R_XY> derOp1, DxDy<View::R_XY> derOp2) const {
-  Buf::R_XY br = grid.rBufXY();
   Buf::C_XY br_K = grid.cBufXY();
-  bracket(derOp1, derOp2, br);
+  halfBracket(derOp1, derOp2, br_K);
+  return br_K;
+}
+
+void Brackets::halfBracket(DxDy<View::R_XY> op1, DxDy<View::R_XY> op2, View::C_XY br_K) const {
+  Buf::R_XY br = grid.rBufXY();
+  bracket(op1, op2, br);
   tf.fft(br, br_K);
   hlFilter(br_K);
   br_K(0, 0) = 0;
-  return br_K;
 }
 
 [[nodiscard]] Brackets::Buf::C_XY Brackets::fullBracket(View::C_XY op1, View::C_XY op2) const {
