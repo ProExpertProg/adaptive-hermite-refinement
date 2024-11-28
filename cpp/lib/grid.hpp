@@ -5,6 +5,7 @@
 #include "typedefs.hpp"
 
 #include <fftw-cpp/fftw-cpp.h>
+#include <mutex>
 
 #define FOREACH_XY(grid, ...)                                                                      \
   do {                                                                                             \
@@ -37,6 +38,9 @@ private:
   template <size_t D, bool IsReal>
   using buf_left = fftw::basic_mdbuffer<Real, stdex::dextents<std::size_t, D>, Complex,
                                         stdex::layout_left, IsReal>;
+
+  /// Mutex for buffer allocation, as FFTW malloc/free is not thread-safe
+  mutable std::mutex alloc_mutex;
 
 public:
   struct Buf {
@@ -79,10 +83,22 @@ private:
 public:
   /// @defgroup Buffer allocators
   /// @{
-  [[nodiscard]] Buf::C_XY cBufXY() const { return {mapping.cXY}; }
-  [[nodiscard]] Buf::R_XY rBufXY() const { return {mapping.rXY}; }
-  [[nodiscard]] Buf::C_MXY cBufMXY() const { return {mapping.cMXY}; }
-  [[nodiscard]] Buf::R_MXY rBufMXY() const { return {mapping.rMXY}; }
+  [[nodiscard]] Buf::C_XY cBufXY() const {
+    std::lock_guard lock{alloc_mutex};
+    return {mapping.cXY};
+  }
+  [[nodiscard]] Buf::R_XY rBufXY() const {
+    std::lock_guard lock{alloc_mutex};
+    return {mapping.rXY};
+  }
+  [[nodiscard]] Buf::C_MXY cBufMXY() const {
+    std::lock_guard lock{alloc_mutex};
+    return {mapping.cMXY};
+  }
+  [[nodiscard]] Buf::R_MXY rBufMXY() const {
+    std::lock_guard lock{alloc_mutex};
+    return {mapping.rMXY};
+  }
   /// @}
 
   /// Named pair for holding both dx and dy derivatives
@@ -121,11 +137,15 @@ public:
   // TODO move iteration to a separate class
 
   /// Iterate in real space
-  void for_each_xy(std::invocable<Dim, Dim> auto fun) const { FOREACH_XY((*this), fun(x, y)); }
+  void for_each_xy(std::invocable<Dim, Dim> auto fun) const {
+    FOREACH_XY ((*this), fun(x, y))
+      ;
+  }
 
   /// Iterate in phase space
   void for_each_kxky(std::invocable<Dim, Dim> auto fun) const {
-    FOREACH_KXKY((*this), fun(kx, ky));
+    FOREACH_KXKY ((*this), fun(kx, ky))
+      ;
   }
 
   [[nodiscard]] Real ky_(Dim ky) const {
