@@ -1,6 +1,6 @@
 #include "fftw-cpp/fftw-cpp.h"
 
-#include <benchmark/benchmark.h>
+#include "benchmark-util.hpp"
 #include <cilk/cilk.h>
 #include <cilk/cilkscale.h>
 #include <cstring>
@@ -76,15 +76,21 @@ static void BM_FFTW_2D(benchmark::State &state) {
 auto constexpr K = 1024;
 auto constexpr M = K * K;
 
-BENCHMARK(BM_copy_1D)->RangeMultiplier(2)->Range(16 * M, 64 * M)->Unit(benchmark::kMillisecond);
+BENCHMARK_WMIN(BM_copy_1D)
+    ->RangeMultiplier(2)
+    ->Range(16 * M, 64 * M)
+    ->Unit(benchmark::kMillisecond);
 
-BENCHMARK(BM_FFTW_1D)->RangeMultiplier(2)->Range(16 * M, 64 * M)->Unit(benchmark::kMillisecond);
+BENCHMARK_WMIN(BM_FFTW_1D)
+    ->RangeMultiplier(2)
+    ->Range(16 * M, 64 * M)
+    ->Unit(benchmark::kMillisecond);
 
-BENCHMARK(BM_copy_2D)
+BENCHMARK_WMIN(BM_copy_2D)
     ->ArgsProduct({{4 * K, 8 * K, 16 * K}, {4 * K, 8 * K, 16 * K}})
     ->Unit(benchmark::kMillisecond);
 
-BENCHMARK(BM_FFTW_2D)
+BENCHMARK_WMIN(BM_FFTW_2D)
     ->ArgsProduct({{4 * K, 8 * K, 16 * K}, {4 * K, 8 * K, 16 * K}})
     ->Unit(benchmark::kMillisecond);
 

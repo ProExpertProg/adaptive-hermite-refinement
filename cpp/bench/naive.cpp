@@ -1,12 +1,10 @@
 #include "Naive.hpp"
 
-#include <benchmark/benchmark.h>
+#include "benchmark-util.hpp"
 #include <iostream>
 
 using namespace ahr;
 static void BM_Naive(benchmark::State &state) {
-  std::ostringstream oss;
-
   Dim const M = state.range(0);
   Dim const X = state.range(1);
   Dim const N = state.range(2);
@@ -26,7 +24,7 @@ static void BM_Naive(benchmark::State &state) {
   }
 }
 
-BENCHMARK(BM_Naive)
+BENCHMARK_WMIN(BM_Naive)
     ->ArgsProduct({{2, 4, 10, 45}, {128, 256, 512}, {5}})
     ->ArgsProduct({{2, 4}, {1024, 2048}, {5}})
     ->ArgsProduct({{2}, {4096}, {5}})
